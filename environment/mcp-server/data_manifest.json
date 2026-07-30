@@ -1,0 +1,45 @@
+{
+  "schema_version": "feature_engineering_fixed_split_v1",
+  "license": "External Evaluation Sample License",
+  "source_type": "historical cryptocurrency minute supervised-learning snapshot",
+  "source_location": "omitted from the external distribution",
+  "sha256": {
+    "public_runtime": "cc9c5f7f434886715b77189fc9790fea58cf71f3ec611917a59bd9b1634fd36a",
+    "hidden_verifier": "8e1dddee577a0e20fea9af99e6015112cccfd3b57a8cc5b71b4e650e55ebf5af"
+  },
+  "public_path": "data/runtime_public.parquet",
+  "hidden_path": "tests/hidden_data/hidden.parquet",
+  "public_start_datetime": "2022-01-01T00:00:00+00:00",
+  "public_end_datetime": "2023-12-31T23:59:00+00:00",
+  "hidden_start_datetime": "2024-01-01T00:00:00+00:00",
+  "hidden_end_datetime": "2024-12-31T23:59:00+00:00",
+  "symbols": [
+    "symbol_01",
+    "symbol_02",
+    "symbol_03",
+    "symbol_04"
+  ],
+  "source_symbols": [
+    "BTCUSDT",
+    "DOGEUSDT",
+    "ETHUSDT",
+    "SOLUSDT"
+  ],
+  "features": [
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume",
+    "quote_asset_volume",
+    "number_of_trades",
+    "taker_buy_base_asset_volume",
+    "taker_buy_quote_asset_volume",
+    "weight_std_dollar_vol"
+  ],
+  "target": "target_horizon_1",
+  "scoring_columns": [
+    "tradable_return",
+    "beta_10d_fwd_1"
+  ]
+}

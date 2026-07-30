@@ -1,0 +1,26 @@
+services:
+  main:
+    build:
+      context: ..
+      dockerfile: environment/Dockerfile
+    depends_on:
+      mcp-server:
+        condition: service_healthy
+
+  mcp-server:
+    build:
+      context: ..
+      dockerfile: environment/mcp-server/Dockerfile
+      target: tools
+    environment:
+      FEATURE_RUNTIME_ROOT: /app/runtime
+      FEATURE_SUBMISSION_ROOT: /app/submission
+      FEATURE_TASK_CONFIG: /app/task_config.yaml
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s=socket.create_connection(('localhost',8000),timeout=2); s.close()"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 10s

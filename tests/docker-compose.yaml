@@ -1,0 +1,44 @@
+services:
+  main:
+    build:
+      context: ..
+      dockerfile: environment/mcp-server/Dockerfile
+      target: verifier
+    environment:
+      FEATURE_VERIFIER_RUNTIME_ROOT: /exchange/runtime
+      FEATURE_WORKER_SOCKET: /exchange/worker.sock
+    volumes:
+      - verifier-exchange:/exchange
+    depends_on:
+      model-worker:
+        condition: service_healthy
+
+  model-worker:
+    build:
+      context: ..
+      dockerfile: environment/mcp-server/Dockerfile
+      target: tools
+    command: ["feature-engineering-worker-server"]
+    environment:
+      FEATURE_WORKER_ROOT: /exchange/runtime
+      FEATURE_WORKER_SOCKET: /exchange/worker.sock
+    volumes:
+      - verifier-exchange:/exchange
+    network_mode: none
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    healthcheck:
+      test: ["CMD", "python", "-c", "from pathlib import Path; raise SystemExit(not Path('/exchange/worker.sock').exists())"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 5s
+
+volumes:
+  verifier-exchange:

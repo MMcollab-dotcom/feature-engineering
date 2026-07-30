@@ -1,0 +1,63 @@
+workspace:
+  profile: feature_engineering
+
+data:
+  granularity: minutely
+  features:
+    - open
+    - high
+    - low
+    - close
+    - volume
+    - quote_asset_volume
+    - number_of_trades
+    - taker_buy_base_asset_volume
+    - taker_buy_quote_asset_volume
+    - weight_std_dollar_vol
+  targets:
+    - target_horizon_1
+  scoring:
+    tradable_return: tradable_return
+    market_beta: beta_10d_fwd_1
+
+backtest:
+  engine: ema_smoothed
+  rebalance_freq: 1
+  portfolio_ema_hl_steps: 7
+  portfolio_ema_tail_hl_steps: 4
+  portfolio_ema_switch_steps: 7
+  target_norm_weight: 0.1
+
+agent:
+  max_research_attempts: 50
+  response_error_budget: 10
+
+prediction:
+  allowed_model_packages:
+    - math
+    - statistics
+    - numpy
+    - pandas
+    - sklearn
+  max_model_code_bytes: 20000
+
+execution:
+  initial_capital: 100000.0
+  timeout_seconds: 1800.0
+
+costs:
+  linear_fee_bps: 1.0
+
+reward:
+  model: annualized_sharpe
+  periods_per_year: 525600
+  primary_metric: sharpe
+  reported_metrics:
+    - sharpe
+    - cagr
+    - max_drawdown
+    - pearson_ic
+
+harbor:
+  submission_path: /app/submission
+  primary_metric: sharpe

@@ -1,0 +1,10 @@
+**
+!environment/
+!environment/agent/
+!environment/agent/AGENTS.md
+!environment/agent/context/
+!environment/agent/context/*.md
+!environment/mcp-server/
+!environment/mcp-server/requirements.lock
+!environment/mcp-server/runtime_public.parquet
+!environment/mcp-server/task_config.yaml
