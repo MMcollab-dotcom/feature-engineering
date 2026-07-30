@@ -58,7 +58,7 @@ class EmaSmoothedPortfolioEngine:
             dtype="float64",
         )
         self.ema_tail = np.zeros(symbol_count, dtype="float64")
-        self.previous_dual = np.zeros(2 * symbol_count, dtype="float64")
+        self.previous_dual = np.zeros(symbol_count, dtype="float64")
         self.identity = np.eye(symbol_count, dtype="float64")
         self.fee_rate = fee_rate
         self.max_gross_exposure = max_gross_exposure
@@ -82,7 +82,6 @@ class EmaSmoothedPortfolioEngine:
             pretrade_position=request.pretrade_weights,
             market_beta=beta,
             linear_execution_cost=self.fee_rate,
-            future_decay_cost=self.fee_rate * self.ema_entry_weight,
             quadratic_penalty=self.quadratic_penalty,
             gross_budget=self.max_gross_exposure,
             initial_dual=self.previous_dual,
@@ -101,8 +100,6 @@ class EmaSmoothedPortfolioEngine:
                 "expected_return": solved.expected_return,
                 "turnover": solved.turnover,
                 "objective_execution_cost": solved.execution_cost,
-                "objective_future_decay_cost": solved.future_decay_cost,
-                "future_decay_cost_rate": self.fee_rate * self.ema_entry_weight,
                 "objective_value": solved.objective_value,
                 "iterations": solved.iterations,
                 "quadratic_penalty": self.quadratic_penalty,

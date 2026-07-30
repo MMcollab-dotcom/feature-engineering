@@ -16,7 +16,6 @@ class QuadraticOptimisation:
     expected_return: float
     turnover: float
     execution_cost: float
-    future_decay_cost: float
     objective_value: float
     iterations: int
     gross_constraint_active: bool
@@ -30,7 +29,6 @@ def optimise_linear_position(
     pretrade_position: np.ndarray,
     market_beta: np.ndarray,
     linear_execution_cost: float,
-    future_decay_cost: float,
     quadratic_penalty: float,
     gross_budget: float,
     initial_dual: np.ndarray,
@@ -49,7 +47,7 @@ def optimise_linear_position(
         older.shape != (size,)
         or pretrade.shape != (size,)
         or beta.shape != (size,)
-        or dual.shape != (2 * size,)
+        or dual.shape != (size,)
         or matrix.shape != (size, size)
     ):
         raise ValueError("optimizer inputs must share one square asset dimension")
@@ -59,8 +57,6 @@ def optimise_linear_position(
         raise ValueError("quadratic_penalty must be finite and positive")
     if linear_execution_cost < 0.0 or not np.isfinite(linear_execution_cost):
         raise ValueError("linear_execution_cost must be finite and non-negative")
-    if future_decay_cost < 0.0 or not np.isfinite(future_decay_cost):
-        raise ValueError("future_decay_cost must be finite and non-negative")
 
     offset = older - pretrade
     if gross_budget == 0.0:
@@ -71,7 +67,6 @@ def optimise_linear_position(
             offset=offset,
             matrix=matrix,
             execution_cost_rate=linear_execution_cost,
-            future_decay_cost_rate=future_decay_cost,
             quadratic_penalty=quadratic_penalty,
             iterations=0,
             gross_constraint_active=True,
@@ -82,17 +77,12 @@ def optimise_linear_position(
     if beta_norm_squared > np.finfo("float64").eps:
         projection -= np.outer(beta, beta) / beta_norm_squared
     projected_mu = projection @ mu
-    projected_matrix = np.concatenate((matrix @ projection, projection), axis=0)
-    projected_offset = np.concatenate((offset, np.zeros(size)))
-    dual_bound = np.concatenate(
-        (
-            np.full(size, linear_execution_cost),
-            np.full(size, future_decay_cost),
-        )
-    )
+    projected_matrix = matrix @ projection
+    projected_offset = offset
+    dual_bound = np.full(size, linear_execution_cost)
 
     iterations = 0
-    if linear_execution_cost == 0.0 and future_decay_cost == 0.0:
+    if linear_execution_cost == 0.0:
         allocation = projected_mu / quadratic_penalty
         dual.fill(0.0)
     else:
@@ -126,7 +116,6 @@ def optimise_linear_position(
             matrix=matrix,
             market_beta=beta,
             execution_cost=linear_execution_cost,
-            future_decay_cost=future_decay_cost,
             quadratic_penalty=quadratic_penalty,
             gross_budget=gross_budget,
             initial_allocation=allocation * (gross_budget / gross),
@@ -147,7 +136,6 @@ def optimise_linear_position(
         offset=offset,
         matrix=matrix,
         execution_cost_rate=linear_execution_cost,
-        future_decay_cost_rate=future_decay_cost,
         quadratic_penalty=quadratic_penalty,
         iterations=iterations,
         gross_constraint_active=gross_constraint_active,
@@ -162,7 +150,6 @@ def _result(
     offset: np.ndarray,
     matrix: np.ndarray,
     execution_cost_rate: float,
-    future_decay_cost_rate: float,
     quadratic_penalty: float,
     iterations: int,
     gross_constraint_active: bool,
@@ -171,7 +158,6 @@ def _result(
     expected_return = float(mu @ allocation)
     turnover = float(np.abs(trade).sum())
     execution_cost = execution_cost_rate * turnover
-    future_cost = future_decay_cost_rate * float(np.abs(allocation).sum())
     quadratic_cost = 0.5 * quadratic_penalty * float(allocation @ allocation)
     return QuadraticOptimisation(
         allocation=allocation,
@@ -179,10 +165,7 @@ def _result(
         expected_return=expected_return,
         turnover=turnover,
         execution_cost=execution_cost,
-        future_decay_cost=future_cost,
-        objective_value=(
-            expected_return - quadratic_cost - execution_cost - future_cost
-        ),
+        objective_value=expected_return - quadratic_cost - execution_cost,
         iterations=iterations,
         gross_constraint_active=gross_constraint_active,
     )
@@ -195,7 +178,6 @@ def _solve_gross_constrained_qp(
     matrix: np.ndarray,
     market_beta: np.ndarray,
     execution_cost: float,
-    future_decay_cost: float,
     quadratic_penalty: float,
     gross_budget: float,
     initial_allocation: np.ndarray,
@@ -227,7 +209,6 @@ def _solve_gross_constrained_qp(
             0.5 * quadratic_penalty * (allocation @ allocation)
             - expected_returns @ allocation
             + execution_cost * turnover.sum()
-            + future_decay_cost * values[2 * size :].sum()
         )
 
     def gradient(values: np.ndarray) -> np.ndarray:
@@ -236,7 +217,7 @@ def _solve_gross_constrained_qp(
             (
                 quadratic_penalty * allocation - expected_returns,
                 np.full(size, execution_cost),
-                np.full(size, future_decay_cost),
+                np.zeros(size),
             )
         )
 
