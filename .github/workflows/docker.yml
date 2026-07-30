@@ -1,0 +1,126 @@
+name: Docker
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/docker.yml"
+      - ".github/dependabot.yml"
+      - ".dockerignore"
+      - "test-docker.sh"
+      - "tests/docker_contracts.py"
+      - "tests/docker-compose.yaml"
+      - "tests/test.sh"
+      - "tests/hidden_data/**"
+      - "environment/Dockerfile"
+      - "environment/Dockerfile.dockerignore"
+      - "environment/docker-compose.yaml"
+      - "environment/agent/**"
+      - "environment/mcp-server/**"
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/docker.yml"
+      - ".github/dependabot.yml"
+      - ".dockerignore"
+      - "test-docker.sh"
+      - "tests/docker_contracts.py"
+      - "tests/docker-compose.yaml"
+      - "tests/test.sh"
+      - "tests/hidden_data/**"
+      - "environment/Dockerfile"
+      - "environment/Dockerfile.dockerignore"
+      - "environment/docker-compose.yaml"
+      - "environment/agent/**"
+      - "environment/mcp-server/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    name: Native container contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          lfs: true
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - name: Run container contracts
+        run: ./test-docker.sh
+
+  platform-and-supply-chain:
+    name: ${{ matrix.name }} (${{ matrix.target || 'final' }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: agent
+            dockerfile: environment/Dockerfile
+            target: ""
+          - name: mcp-server
+            dockerfile: environment/mcp-server/Dockerfile
+            target: tools
+          - name: model-worker
+            dockerfile: environment/mcp-server/Dockerfile
+            target: worker
+          - name: verifier
+            dockerfile: environment/mcp-server/Dockerfile
+            target: verifier
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          lfs: true
+      - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - name: Build amd64 and arm64 with attestations
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          target: ${{ matrix.target }}
+          platforms: linux/amd64,linux/arm64
+          push: false
+          outputs: type=cacheonly
+          sbom: true
+          provenance: mode=max
+          cache-from: type=gha,scope=${{ matrix.name }}-multiarch
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}-multiarch
+      - name: Load native image for scanning
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          target: ${{ matrix.target }}
+          platforms: linux/amd64
+          load: true
+          tags: feature-engineering/${{ matrix.name }}:ci
+          cache-from: type=gha,scope=${{ matrix.name }}-multiarch
+      - uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # v0.3.1
+        with:
+          version: v0.72.0
+          cache: true
+      - name: Reject fixable critical vulnerabilities
+        run: >-
+          trivy image
+          --exit-code 1
+          --ignore-unfixed
+          --severity CRITICAL
+          --scanners vuln
+          feature-engineering/${{ matrix.name }}:ci
+      - name: Generate CycloneDX SBOM
+        run: >-
+          trivy image
+          --format cyclonedx
+          --output ${{ matrix.name }}.cdx.json
+          feature-engineering/${{ matrix.name }}:ci
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ${{ matrix.name }}-sbom
+          path: ${{ matrix.name }}.cdx.json
+          if-no-files-found: error
+          retention-days: 14
