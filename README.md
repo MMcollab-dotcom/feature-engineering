@@ -5,12 +5,12 @@ minute data, with hidden scoring after submission.
 
 The agent phase has two containers:
 
-- `main`: the public CSV, three context Markdown files, and Python libraries
+- `main`: the public Parquet, three context Markdown files, and Python libraries
 - `mcp-server`: asynchronous train, backtest, and submission tools
 
 Both images derive their public data from one canonical Parquet snapshot. The
-main image materializes only the agent-visible columns as CSV; the two scoring
-columns remain available only to the MCP runtime.
+main image materializes only the agent-visible columns as compressed Parquet;
+the two scoring columns remain available only to the MCP runtime.
 
 Harbor collects `/app/submission` directly from the MCP sidecar, tears the agent
 environment down, and starts a separate verifier. The verifier owns hidden data

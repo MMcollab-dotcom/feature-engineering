@@ -17,7 +17,7 @@ services:
     build:
       context: ..
       dockerfile: environment/mcp-server/Dockerfile
-      target: tools
+      target: worker
     command: ["feature-engineering-worker-server"]
     environment:
       FEATURE_WORKER_ROOT: /exchange/runtime

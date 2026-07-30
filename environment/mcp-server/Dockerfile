@@ -19,21 +19,25 @@ COPY environment/mcp-server/evalenv_shared/worker /app/evalenv_shared/worker
 COPY environment/mcp-server/evalenv_shared/__init__.py /app/evalenv_shared/__init__.py
 RUN uv pip install --system --no-deps --no-build-isolation /app
 
+FROM runtime AS worker
+
+CMD ["feature-engineering-worker-server"]
+
+FROM runtime AS tools
+
 COPY environment/mcp-server/task_config.yaml environment/mcp-server/data_manifest.json /app/
 COPY environment/mcp-server/runtime_public.parquet /app/data/runtime_public.parquet
 
 RUN mkdir -p /app/runtime /app/submission \
  && chmod 600 /app/data/runtime_public.parquet
 
-FROM runtime AS verifier
+EXPOSE 8000
+
+CMD ["feature-engineering-mcp"]
+
+FROM tools AS verifier
 
 COPY tests /tests
 COPY tests/hidden_data /app/tests/hidden_data
 
 CMD ["sleep", "infinity"]
-
-FROM runtime AS tools
-
-EXPOSE 8000
-
-CMD ["feature-engineering-mcp"]

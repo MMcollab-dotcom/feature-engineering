@@ -5,8 +5,8 @@ on the public split, and submit one successfully backtested strategy.
 
 Start by reading `context/research.md`, `context/submission.md`, and
 `context/backtesting.md`. The only dataset available to you is
-`data/public_train.csv`: 2022–2023 minute rows for four anonymized symbols. The
-target is the opaque `target_horizon_1`. Treat `weight_std_dollar_vol` only as
+`data/public_train.parquet`: 2022–2023 minute rows for four anonymized symbols.
+The target is the opaque `target_horizon_1`. Treat `weight_std_dollar_vol` only as
 sample-weight metadata, never as a predictor.
 
 Use these MCP tools directly; their live schemas are authoritative:
