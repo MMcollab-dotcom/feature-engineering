@@ -98,6 +98,10 @@ def assert_equal(actual: Any, expected: Any, label: str) -> None:
         raise AssertionError(f"{label}: expected {expected!r}, got {actual!r}")
 
 
+def normalize_capabilities(capabilities: list[str]) -> list[str]:
+    return sorted(capability.removeprefix("CAP_") for capability in capabilities)
+
+
 def assert_compose_contract() -> None:
     print("\n== Compose security and dependency contract ==", flush=True)
     config = json.loads(
@@ -266,7 +270,7 @@ def assert_runtime_security() -> None:
         initializer_host["CapDrop"], ["ALL"], "runtime initializer dropped capabilities"
     )
     assert_equal(
-        sorted(initializer_host["CapAdd"]),
+        normalize_capabilities(initializer_host["CapAdd"]),
         ["CHOWN", "DAC_OVERRIDE", "FOWNER"],
         "runtime initializer capabilities",
     )
