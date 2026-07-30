@@ -157,15 +157,38 @@ class VerifierBehaviorTests(unittest.IsolatedAsyncioTestCase):
                     self.manifest_path.write_bytes(original_manifest)
                 score.assert_not_awaited()
 
-    async def test_bundle_cardinality_schema_and_public_acceptance_precede_scoring(
+    async def test_missing_submission_writes_negative_reward_outputs(self) -> None:
+        submission_root = self._copied_submission_root("missing", bundle_count=0)
+        score = AsyncMock()
+        with patch(
+            "feature_engineering.scoring.official.score_official_strategy",
+            new=score,
+        ):
+            rewards = await self._verify(submission_root=submission_root)
+
+        expected = {
+            "primary_score": -100.0,
+            "reward": -100.0,
+            "sharpe": -100.0,
+            "cagr": -100.0,
+            "max_drawdown": -100.0,
+            "pearson_ic": -100.0,
+        }
+        self.assertEqual(rewards, expected)
+        self.assertEqual(
+            json.loads((self.root / "reward.json").read_text(encoding="utf-8")),
+            expected,
+        )
+        self.assertEqual(
+            json.loads((self.root / "metrics.json").read_text(encoding="utf-8")),
+            expected,
+        )
+        score.assert_not_awaited()
+
+    async def test_invalid_bundle_schema_and_public_acceptance_precede_scoring(
         self,
     ) -> None:
         cases = (
-            (
-                "zero",
-                self._copied_submission_root("zero", bundle_count=0),
-                "Expected one submission bundle, found 0",
-            ),
             (
                 "multiple",
                 self._copied_submission_root("multiple", bundle_count=2),

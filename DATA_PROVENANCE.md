@@ -1,4 +1,4 @@
-# Data Provenance and External-Provider Clearance
+# Data Provenance
 
 ## Scope
 

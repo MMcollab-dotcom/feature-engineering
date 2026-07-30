@@ -32,7 +32,7 @@ neighborhood of viable positive `alpha` and `l1_ratio` values rather than relyin
 on one arbitrary setting or a broad grid. Reject settings that produce all-zero
 coefficients, constant predictions, or effectively unregularized unstable fits.
 
-Training and backtesting share 50 research attempts. Malformed requests and
+Training and backtesting share 100 research attempts. Malformed requests and
 other protocol errors share a separate 10-error allowance. Accepted training or
 backtest work consumes one research attempt; tool results report the remaining
 counts.

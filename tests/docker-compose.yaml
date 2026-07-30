@@ -4,6 +4,7 @@ services:
       context: ..
       dockerfile: environment/mcp-server/Dockerfile
       target: verifier
+    user: "10001:10001"
     environment:
       FEATURE_VERIFIER_RUNTIME_ROOT: /exchange/runtime
       FEATURE_WORKER_SOCKET: /exchange/worker.sock
@@ -13,11 +14,39 @@ services:
       model-worker:
         condition: service_healthy
 
+  worker-volume-init:
+    build:
+      context: ..
+      dockerfile: environment/mcp-server/Dockerfile
+      target: worker
+    user: "0:0"
+    command:
+      - sh
+      - -c
+      - chmod 0770 /exchange && chown -R 10001:10001 /exchange
+    volumes:
+      - verifier-exchange:/exchange
+    network_mode: none
+    read_only: true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 32
+
   model-worker:
     build:
       context: ..
       dockerfile: environment/mcp-server/Dockerfile
       target: worker
+    user: "10001:10001"
+    depends_on:
+      worker-volume-init:
+        condition: service_completed_successfully
     command: ["feature-engineering-worker-server"]
     environment:
       FEATURE_WORKER_ROOT: /exchange/runtime

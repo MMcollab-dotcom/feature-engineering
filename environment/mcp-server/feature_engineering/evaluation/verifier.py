@@ -14,6 +14,36 @@ from pathlib import Path
 DEFAULT_TASK_ROOT = Path("/app")
 DEFAULT_REWARD_PATH = Path("/logs/verifier/reward.json")
 DEFAULT_METRICS_PATH = Path("/logs/verifier/metrics.json")
+MISSING_SUBMISSION_REWARD = -100.0
+
+REWARD_FIELDS = (
+    "primary_score",
+    "reward",
+    "sharpe",
+    "cagr",
+    "max_drawdown",
+    "pearson_ic",
+)
+
+
+def _write_outputs(
+    rewards: dict[str, float],
+    *,
+    reward_path: str | Path,
+    metrics_path: str | Path,
+) -> None:
+    reward_file = Path(reward_path)
+    metrics_file = Path(metrics_path)
+    reward_file.parent.mkdir(parents=True, exist_ok=True)
+    metrics_file.parent.mkdir(parents=True, exist_ok=True)
+    reward_file.write_text(
+        json.dumps(rewards, sort_keys=True, allow_nan=False) + "\n",
+        encoding="utf-8",
+    )
+    metrics_file.write_text(
+        json.dumps(rewards, sort_keys=True, allow_nan=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
 
 
 async def verify_submission(
@@ -40,6 +70,17 @@ async def verify_submission(
     )
     bundle_root = submissions / "feature_engineering" / "submissions"
     bundles = sorted(bundle_root.glob("*/manifest.json"))
+    if not bundles:
+        rewards = {
+            field: MISSING_SUBMISSION_REWARD
+            for field in REWARD_FIELDS
+        }
+        _write_outputs(
+            rewards,
+            reward_path=reward_path,
+            metrics_path=metrics_path,
+        )
+        return rewards
     if len(bundles) != 1:
         raise RuntimeError(f"Expected one submission bundle, found {len(bundles)}.")
     manifest_path = bundles[0]
@@ -109,17 +150,10 @@ async def verify_submission(
         "pearson_ic": float(metrics.get("pearson_ic", metrics["correlation"])),
     }
 
-    reward_file = Path(reward_path)
-    metrics_file = Path(metrics_path)
-    reward_file.parent.mkdir(parents=True, exist_ok=True)
-    metrics_file.parent.mkdir(parents=True, exist_ok=True)
-    reward_file.write_text(
-        json.dumps(rewards, sort_keys=True, allow_nan=False) + "\n",
-        encoding="utf-8",
-    )
-    metrics_file.write_text(
-        json.dumps(rewards, sort_keys=True, allow_nan=False, indent=2) + "\n",
-        encoding="utf-8",
+    _write_outputs(
+        rewards,
+        reward_path=reward_path,
+        metrics_path=metrics_path,
     )
     return rewards
 

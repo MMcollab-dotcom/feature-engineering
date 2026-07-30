@@ -2,7 +2,6 @@
 set -eu
 
 mkdir -p /logs/verifier
-test -f /app/submission/feature_engineering/submissions/*/manifest.json
 feature-engineering-verify \
   --task-config /app/task_config.yaml \
   --task-root /app \

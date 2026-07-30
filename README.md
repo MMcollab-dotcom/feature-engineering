@@ -37,10 +37,8 @@ uvx harbor==0.20.0 --version
 `tests/hidden_data/hidden.parquet`. Docker must have at least the task's
 declared 4 CPUs, 8 GiB memory, and 32 GiB storage available.
 
-The bundled data is licensed only for internal evaluation, research, and
-demonstration. External-provider use is not yet cleared; read
-[`DATA_PROVENANCE.md`](DATA_PROVENANCE.md) before exporting an API key or
-starting an OpenAI or Anthropic run.
+Data provenance and license terms are documented in
+[`DATA_PROVENANCE.md`](DATA_PROVENANCE.md).
 
 ### Tests
 
