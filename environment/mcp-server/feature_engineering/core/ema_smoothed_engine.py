@@ -17,8 +17,8 @@ class EmaSmoothedPortfolioEngine:
         self,
         *,
         config: BacktestConfig,
-        scaled_forecasts: np.ndarray,
-        market_betas: np.ndarray,
+        symbol_count: int,
+        median_signal_size: float,
         fee_rate: float,
         max_gross_exposure: float,
     ) -> None:
@@ -29,18 +29,11 @@ class EmaSmoothedPortfolioEngine:
         ):
             raise ValueError("EMA-smoothed portfolio parameters are required.")
 
-        symbol_count = scaled_forecasts.shape[1]
-        beta_norm_squared = np.sum(market_betas * market_betas, axis=1)
-        projected_forecasts = (
-            scaled_forecasts
-            - market_betas
-            * (np.sum(market_betas * scaled_forecasts, axis=1) / beta_norm_squared)[
-                :, None
-            ]
-        )
-        self.median_signal_size = float(
-            np.median(np.abs(projected_forecasts).sum(axis=1))
-        )
+        if symbol_count <= 0:
+            raise ValueError("symbol_count must be positive.")
+        self.median_signal_size = float(median_signal_size)
+        if not np.isfinite(self.median_signal_size) or self.median_signal_size < 0.0:
+            raise ValueError("median_signal_size must be finite and non-negative.")
         if max_gross_exposure > 0.0 and self.median_signal_size > 0.0:
             self.quadratic_penalty = self.median_signal_size / max_gross_exposure
         else:

@@ -71,6 +71,7 @@ class StoredModel:
     training_filter: tuple[tuple[str, str], ...]
     training_row_count: int
     forecast_scale: float
+    median_signal_size: float
 
 
 @dataclass(frozen=True, slots=True)
@@ -164,6 +165,7 @@ class TrainedModelRegistry:
         training_filter: Mapping[str, str],
         training_row_count: int,
         forecast_scale: float,
+        median_signal_size: float,
         replace_model_id: str | None = None,
     ) -> StoredModel:
         """Atomically commit or replace one completed model artifact."""
@@ -179,6 +181,10 @@ class TrainedModelRegistry:
                 raise RuntimeError("Model source hash changed before registry commit.")
             if not math.isfinite(forecast_scale) or forecast_scale < 0.0:
                 raise ValueError("forecast_scale must be finite and non-negative.")
+            if not math.isfinite(median_signal_size) or median_signal_size < 0.0:
+                raise ValueError(
+                    "median_signal_size must be finite and non-negative."
+                )
             if not source.resolve().is_relative_to(self._root.resolve()):
                 raise RuntimeError(
                     "The staged model artifact is outside the private registry root."
@@ -221,6 +227,7 @@ class TrainedModelRegistry:
                 training_filter=tuple(training_filter.items()),
                 training_row_count=training_row_count,
                 forecast_scale=float(forecast_scale),
+                median_signal_size=float(median_signal_size),
             )
             installed = self._root / f"artifact-{uuid4().hex}.joblib"
             os.replace(pending, installed)

@@ -10,12 +10,14 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+import pandas as pd
 
 from evalenv_shared.worker import WorkerProtocolError
 from feature_engineering.config import TaskConfig
 from feature_engineering.core.fixed_data import SupervisedData
 from feature_engineering.core.portfolio import (
     calculate_forecast_beta,
+    calculate_median_signal_size,
     forecast_scale_from_beta,
 )
 from feature_engineering.submissions.dataframes import (
@@ -311,6 +313,16 @@ async def evaluate_model_code_async(
                 ),
             )
         forecast_scale = forecast_scale_from_beta(forecast_beta)
+        median_signal_size = calculate_median_signal_size(
+            prediction_values.reshape(-1, len(public_data.symbols))
+            * forecast_scale
+            * config.backtest.target_norm_weight,
+            _training_market_betas(
+                config=config,
+                public_data=public_data,
+                training_index=X.index,
+            ),
+        )
         diagnostics = {
             **_diagnostics(
                 prediction_values,
@@ -332,6 +344,7 @@ async def evaluate_model_code_async(
                 training_filter=training_filter,
                 training_row_count=len(X),
                 forecast_scale=forecast_scale,
+                median_signal_size=median_signal_size,
                 replace_model_id=replace_model_id,
             )
         except (ArtifactTooLargeError, RegistryCapacityError) as exc:
@@ -358,6 +371,35 @@ async def evaluate_model_code_async(
             feature_names=validated.inference_columns,
             target_names=target_names,
         )
+
+
+def _training_market_betas(
+    *,
+    config: TaskConfig,
+    public_data: SupervisedData,
+    training_index: pd.MultiIndex,
+) -> np.ndarray:
+    data = config.data
+    datetimes = training_index.get_level_values(data.datetime_column).unique()
+    expected_index = pd.MultiIndex.from_product(
+        [datetimes, public_data.symbols],
+        names=[data.datetime_column, data.symbol_column],
+    )
+    if not training_index.equals(expected_index):
+        raise ValueError(
+            "Training signal calibration requires a complete datetime/symbol panel."
+        )
+    frame_index = pd.MultiIndex.from_frame(
+        public_data.frame.loc[:, list(data.index_columns)]
+    )
+    positions = frame_index.get_indexer(training_index)
+    if np.any(positions < 0):
+        raise ValueError("Training market betas do not cover the training rows.")
+    return (
+        public_data.frame[data.market_beta_column]
+        .to_numpy(dtype="float64")[positions]
+        .reshape(len(datetimes), len(public_data.symbols))
+    )
 
 
 def _worker_model_error(error: WorkerExecutionError, *, operation: str) -> ModelError:

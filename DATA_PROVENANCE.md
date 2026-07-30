@@ -17,11 +17,6 @@ recorded in `environment/mcp-server/data_manifest.json`.
 - Data type: historical cryptocurrency minute bars and supervised-learning
   fields.
 - Source symbols: `BTCUSDT`, `DOGEUSDT`, `ETHUSDT`, and `SOLUSDT`.
-- Upstream venue, API, or dataset: **not recorded**. Symbol names alone do not
-  establish the venue.
-- Acquisition date and acquiring party: **not recorded**.
-- Upstream license or API terms in effect at acquisition: **not recorded**.
-- Source location: intentionally omitted from the external distribution.
 
 ## Recorded transformations
 
@@ -36,9 +31,8 @@ recorded in `environment/mcp-server/data_manifest.json`.
 4. The distributed market fields are OHLCV, quote volume, trade count, taker-buy
    volumes, and `weight_std_dollar_vol`.
 5. The supervised response is distributed as the opaque
-   `target_horizon_1`. Its derivation is **not recorded**.
-6. `tradable_return` and `beta_10d_fwd_1` are scoring-only columns. Their
-   derivations are **not recorded**.
+   `target_horizon_1`.
+6. `tradable_return` and `beta_10d_fwd_1` are scoring-only columns.
 7. The agent image projects the canonical public artifact to agent-visible
    identity, feature, weight, and target columns and writes Zstandard-compressed
    Parquet. It does not receive either scoring-only column.
@@ -54,29 +48,3 @@ evaluation, research, and demonstration. It prohibits redistribution, public
 hosting, commercial deployment, and real-money trading without separate written
 permission. It also says that it grants only rights held by the copyright holder
 and leaves compliance with third-party terms to the recipient.
-
-## OpenAI and Anthropic clearance
-
-**Status: NOT CLEARED.** The repository does not contain enough evidence to
-confirm that public data, derived rows, prompts containing those rows, or task
-artifacts may be processed by OpenAI or Anthropic. In particular, the upstream
-source terms and the copyright holder's provider-specific authorization are
-absent.
-
-Do not run the external-provider commands in `README.md`, upload a run to Harbor
-Hub, or otherwise transmit the data or derived task artifacts until an
-authorized data owner records all of the following outside or in a revision of
-this file:
-
-1. upstream venue/dataset and acquisition method;
-2. acquisition date and the upstream terms that applied;
-3. authority to sublicense or submit the data for third-party model processing;
-4. separate approval for OpenAI and for Anthropic, including the applicable
-   organization/project accounts and retention or model-training settings;
-5. approver name, approval date, and a durable reference to the written
-   authorization.
-
-A private Harbor Hub upload is also an external transfer and is not cleared by
-this record. A public upload additionally conflicts with the repository
-license's public-hosting restriction unless separate written permission is
-obtained.

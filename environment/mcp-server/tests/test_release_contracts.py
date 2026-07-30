@@ -9,12 +9,15 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+import numpy as np
 import pandas as pd
 import yaml
 
 from evalenv_shared.worker.socket_server import _socket_is_live, serve
 from feature_engineering.config import load_task_config
 from feature_engineering.core.backtest import _model_visible_metrics
+from feature_engineering.core.ema_smoothed_engine import EmaSmoothedPortfolioEngine
+from feature_engineering.core.portfolio import calculate_median_signal_size
 
 TASK_ROOT = Path(__file__).resolve().parents[1]
 CONFIG_PATH = TASK_ROOT / "task_config.yaml"
@@ -56,6 +59,27 @@ class ManifestContractTests(unittest.TestCase):
             self.assertEqual(execution, origin + pd.Timedelta(minutes=1))
             self.assertEqual(realization, origin + pd.Timedelta(minutes=2))
             self.assertNotIn(f"{split}_end_datetime", payload)
+
+
+class PortfolioScalingTests(unittest.TestCase):
+    def test_training_median_uses_beta_neutral_cross_sections(self) -> None:
+        forecasts = np.asarray([[1.0, 2.0], [5.0, 1.0]])
+        betas = np.asarray([[1.0, 0.0], [1.0, 1.0]])
+
+        self.assertEqual(calculate_median_signal_size(forecasts, betas), 3.0)
+
+    def test_engine_uses_frozen_training_median(self) -> None:
+        config = load_task_config(CONFIG_PATH)
+        engine = EmaSmoothedPortfolioEngine(
+            config=config.backtest,
+            symbol_count=4,
+            median_signal_size=0.25,
+            fee_rate=0.0001,
+            max_gross_exposure=0.5,
+        )
+
+        self.assertEqual(engine.median_signal_size, 0.25)
+        self.assertEqual(engine.quadratic_penalty, 0.5)
 
 
 class SocketLifecycleTests(unittest.IsolatedAsyncioTestCase):

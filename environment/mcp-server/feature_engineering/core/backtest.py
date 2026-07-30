@@ -127,6 +127,7 @@ async def run_backtest(
                 strategy=strategy,
                 predictions=predicted.frame,
                 forecast_scale=model.forecast_scale,
+                median_signal_size=model.median_signal_size,
             )
             audit = dict(predicted.audit)
             visible = (

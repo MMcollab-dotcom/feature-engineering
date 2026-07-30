@@ -79,6 +79,7 @@ async def verify_submission(
             training_filter=manifest["training"]["filter"],
             training_row_count=int(manifest["training"]["row_count"]),
             forecast_scale=float(manifest["training"]["forecast_scale"]),
+            median_signal_size=float(manifest["training"]["median_signal_size"]),
         )
 
     settings = manifest["strategy"]["settings"]

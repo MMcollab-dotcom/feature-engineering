@@ -189,6 +189,7 @@ def _build_manifest(
             "filter": dict(model.training_filter),
             "row_count": model.training_row_count,
             "forecast_scale": model.forecast_scale,
+            "median_signal_size": model.median_signal_size,
             "fit_diagnostics": dict(fit_diagnostics),
         },
         "strategy": {

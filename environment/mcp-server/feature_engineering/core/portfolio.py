@@ -70,6 +70,34 @@ def forecast_scale_from_beta(forecast_beta: float) -> float:
     return FORECAST_SCALE_SHRINKAGE * max(0.0, float(forecast_beta))
 
 
+def calculate_median_signal_size(
+    scaled_forecasts: np.ndarray,
+    market_betas: np.ndarray,
+) -> float:
+    """Return the median beta-neutral gross signal across training timestamps."""
+
+    forecasts = np.asarray(scaled_forecasts, dtype="float64")
+    betas = np.asarray(market_betas, dtype="float64")
+    if forecasts.ndim != 2 or forecasts.shape != betas.shape or not forecasts.size:
+        raise ValueError(
+            "Training forecasts and market betas must be equal non-empty matrices."
+        )
+    if not np.isfinite(forecasts).all() or not np.isfinite(betas).all():
+        raise ValueError("Training forecasts and market betas must be finite.")
+    beta_norm_squared = np.sum(betas * betas, axis=1)
+    projection_scale = np.divide(
+        np.sum(betas * forecasts, axis=1),
+        beta_norm_squared,
+        out=np.zeros(len(forecasts), dtype="float64"),
+        where=beta_norm_squared > np.finfo("float64").eps,
+    )
+    projected_forecasts = forecasts - betas * projection_scale[:, None]
+    median_signal_size = float(np.median(np.abs(projected_forecasts).sum(axis=1)))
+    if not np.isfinite(median_signal_size) or median_signal_size < 0.0:
+        raise ValueError("Training median signal size must be finite and non-negative.")
+    return median_signal_size
+
+
 def execute_backtest(
     *,
     config: TaskConfig,
@@ -79,6 +107,7 @@ def execute_backtest(
     strategy: CompiledStrategy,
     predictions: pd.DataFrame,
     forecast_scale: float,
+    median_signal_size: float,
 ) -> BacktestSimulation:
     """Replay one prediction batch through the scheduled single-horizon LP."""
 
@@ -178,8 +207,8 @@ def execute_backtest(
     fee_rate = linear_fee_rate(config.costs)
     engine = EmaSmoothedPortfolioEngine(
         config=config.backtest,
-        scaled_forecasts=scaled_forecasts,
-        market_betas=market_betas,
+        symbol_count=symbol_count,
+        median_signal_size=median_signal_size,
         fee_rate=fee_rate,
         max_gross_exposure=strategy.max_gross_exposure,
     )
@@ -609,6 +638,7 @@ __all__ = [
     "backtest_metrics",
     "calculate_forecast_beta",
     "calculate_forecast_scale",
+    "calculate_median_signal_size",
     "execute_backtest",
     "forecast_scale_from_beta",
 ]

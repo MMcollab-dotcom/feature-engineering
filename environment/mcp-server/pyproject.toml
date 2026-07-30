@@ -25,6 +25,7 @@ dependencies = [
 feature-engineering-verify = "feature_engineering.evaluation.verifier:main"
 feature-engineering-mcp = "feature_engineering.mcp_server:main"
 feature-engineering-worker-server = "evalenv_shared.worker.socket_server:main"
+test = "feature_engineering.test_runner:main"
 
 [tool.ruff]
 line-length = 88
