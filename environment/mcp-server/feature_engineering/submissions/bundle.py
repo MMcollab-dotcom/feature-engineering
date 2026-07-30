@@ -58,6 +58,7 @@ def promote_submission_bundle(
     temporary_directory = Path(
         tempfile.mkdtemp(prefix=".submission-", dir=submissions_root)
     )
+    temporary_directory.chmod(0o755)
     renamed = False
     try:
         source_path = temporary_directory / MODEL_SOURCE_NAME
@@ -74,6 +75,7 @@ def promote_submission_bundle(
                 operation_directory / MODEL_ARTIFACT_NAME,
                 artifact_path,
             )
+        artifact_path.chmod(0o644)
         if copied_bytes != model.artifact_bytes or copied_hash != model.artifact_sha256:
             raise FeatureEngineeringArtifactError(
                 "Selected model artifact does not match registry metadata."
@@ -243,7 +245,7 @@ def _write_bytes(path: Path, payload: bytes) -> None:
         handle.write(payload)
         handle.flush()
         os.fsync(handle.fileno())
-    path.chmod(0o600)
+    path.chmod(0o644)
 
 
 def _write_json(path: Path, payload: Mapping[str, Any]) -> None:

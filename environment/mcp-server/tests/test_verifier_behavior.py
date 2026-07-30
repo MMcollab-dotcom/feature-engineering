@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import shutil
+import stat
 import tempfile
 import unittest
 from pathlib import Path
@@ -104,6 +105,12 @@ class VerifierBehaviorTests(unittest.IsolatedAsyncioTestCase):
                     bundle=self.bundle,
                     expected=entry["sha256"],
                 )
+
+    def test_published_bundle_is_readable_by_separate_verifier_user(self) -> None:
+        self.assertEqual(stat.S_IMODE(self.bundle.stat().st_mode), 0o755)
+        for path in self.bundle.iterdir():
+            with self.subTest(path=path.name):
+                self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o644)
 
     async def test_tampered_source_and_artifact_are_rejected_before_scoring(
         self,
