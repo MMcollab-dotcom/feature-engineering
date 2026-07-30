@@ -33,8 +33,8 @@ def load_supervised_data(config: TaskConfig, *, s3_client=None) -> SupervisedDat
     return normalize_supervised_frame(
         config,
         frame,
-        start_datetime=pd.Timestamp(manifest["public_start_datetime"]),
-        end_datetime=pd.Timestamp(manifest["public_end_datetime"]),
+        start_datetime=pd.Timestamp(manifest["public_first_forecast_origin_datetime"]),
+        end_datetime=pd.Timestamp(manifest["public_last_realization_datetime"]),
         manifest_sha256=hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
     )
 
@@ -72,8 +72,12 @@ def normalize_supervised_frame(
     if normalized.duplicated(list(data.index_columns)).any():
         raise ValueError("Supervised data contains duplicate index keys.")
     symbols = tuple(sorted(normalized[data.symbol_column].astype(str).unique()))
-    if not symbols or symbols != tuple(f"symbol_{i:02d}" for i in range(1, len(symbols) + 1)):
-        raise ValueError("Supervised data symbols must be the complete symbol_NN sequence.")
+    if not symbols or symbols != tuple(
+        f"symbol_{i:02d}" for i in range(1, len(symbols) + 1)
+    ):
+        raise ValueError(
+            "Supervised data symbols must be the complete symbol_NN sequence."
+        )
     for column in dict.fromkeys((*data.features, *data.targets, *data.scoring_columns)):
         normalized[column] = normalized[column].astype(float)
     return SupervisedData(

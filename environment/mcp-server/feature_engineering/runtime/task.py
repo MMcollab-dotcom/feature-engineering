@@ -51,9 +51,7 @@ _CAUSAL_VALIDATION_ERROR_CODES = frozenset(
 
 _LOGGER = logging.getLogger(__name__)
 
-_INTERNAL_TRAINING_DIAGNOSTICS = frozenset(
-    {"fit_forecast_beta", "forecast_scale"}
-)
+_INTERNAL_TRAINING_DIAGNOSTICS = frozenset({"fit_forecast_beta", "forecast_scale"})
 
 
 def _model_visible_training_diagnostics(
@@ -271,7 +269,9 @@ class FeatureEngineeringRuntime:
             worker_host=worker_host or SubprocessWorkerHost(),
             registry=registry,
             official_scoring_enabled=official_scoring_enabled,
-            task_outputs=Path(task_outputs).resolve() if task_outputs is not None else None,
+            task_outputs=Path(task_outputs).resolve()
+            if task_outputs is not None
+            else None,
             task_name=task_name,
             data_split=data_split,
         )
@@ -446,7 +446,9 @@ class FeatureEngineeringRuntime:
             # publication happens later and cannot change this outcome.
             if operation.result is not None or operation.failure is not None:
                 if self.active_training_id != training_id:
-                    raise RuntimeError("Training completion does not own the active slot.")
+                    raise RuntimeError(
+                        "Training completion does not own the active slot."
+                    )
                 self.active_training_id = None
                 self._finish_pending_termination_if_idle()
 
@@ -494,7 +496,9 @@ class FeatureEngineeringRuntime:
                 "type": "error",
                 "ok": False,
                 "error_code": "unknown_model_id",
-                "message": "Backtest model_id must refer to a successful train_model action.",
+                "message": (
+                    "Backtest model_id must refer to a successful train_model action."
+                ),
                 "recoverable": True,
                 "model_id": request.model_id,
                 "available_model_ids": available_model_ids,
@@ -634,7 +638,9 @@ class FeatureEngineeringRuntime:
             # publication happens later and cannot change this outcome.
             if operation.result is not None or operation.failure is not None:
                 if self.active_backtest_id != backtest_id:
-                    raise RuntimeError("Backtest completion does not own the active slot.")
+                    raise RuntimeError(
+                        "Backtest completion does not own the active slot."
+                    )
                 self.active_backtest_id = None
                 self._finish_pending_termination_if_idle()
 
@@ -700,7 +706,9 @@ class FeatureEngineeringRuntime:
                 "type": "error",
                 "ok": False,
                 "error_code": "operations_still_running",
-                "message": "Wait for active training and backtest operations to finish.",
+                "message": (
+                    "Wait for active training and backtest operations to finish."
+                ),
                 "recoverable": True,
                 "active_training_id": self.active_training_id,
                 "active_backtest_id": self.active_backtest_id,
@@ -986,7 +994,9 @@ class FeatureEngineeringRuntime:
             "type": "error",
             "ok": False,
             "error_code": "rollout_terminating",
-            "message": "No new research operation may start while the rollout terminates.",
+            "message": (
+                "No new research operation may start while the rollout terminates."
+            ),
             "recoverable": False,
             "research_budget": self._budget_payload(),
         }
@@ -1181,4 +1191,3 @@ def _hidden_audit_projection(
     if error_code is not None:
         projected["error_code"] = error_code
     return projected
-

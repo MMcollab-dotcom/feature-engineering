@@ -26,6 +26,13 @@ feature-engineering-verify = "feature_engineering.evaluation.verifier:main"
 feature-engineering-mcp = "feature_engineering.mcp_server:main"
 feature-engineering-worker-server = "evalenv_shared.worker.socket_server:main"
 
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["feature_engineering*", "evalenv_shared*"]

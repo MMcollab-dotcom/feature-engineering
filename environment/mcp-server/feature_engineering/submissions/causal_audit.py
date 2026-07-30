@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import random
 from dataclasses import dataclass
 from itertools import permutations
-import random
 from typing import Sequence
 
 import numpy as np
@@ -14,7 +14,6 @@ from feature_engineering.config import TaskConfig
 from feature_engineering.core.fixed_data import SupervisedData
 from feature_engineering.core.granularity import forecast_origin_end_datetime
 from feature_engineering.submissions.dataframes import build_prediction_frame
-
 
 POLICY = "future_suffix_v1"
 PROBE_COUNT = 3
@@ -137,7 +136,9 @@ def validate_fixed_audit_frame(
     try:
         build_future_suffix_probes(X, feature_names=feature_names, seed=0)
     except (AuditInputInsufficient, AuditUnavailable) as exc:
-        raise ValueError(f"Fixed prediction window is not causally auditable: {exc}") from exc
+        raise ValueError(
+            f"Fixed prediction window is not causally auditable: {exc}"
+        ) from exc
 
 
 def validate_fixed_prediction_window(
@@ -147,7 +148,9 @@ def validate_fixed_prediction_window(
     start: object,
     end: object,
 ) -> None:
-    origin_end = forecast_origin_end_datetime(pd.Timestamp(end), config.data.granularity)
+    origin_end = forecast_origin_end_datetime(
+        pd.Timestamp(end), config.data.granularity
+    )
     rows = data.frame.loc[
         (data.frame[config.data.datetime_column] >= pd.Timestamp(start))
         & (data.frame[config.data.datetime_column] <= origin_end)
@@ -189,9 +192,7 @@ def _build_probe(
         finite_vectors = np.isfinite(values).all(axis=1)
         for _ in range(MAX_BUILD_ATTEMPTS):
             for symbol in pd.unique(symbols[future_mask]):
-                donor_values = values[
-                    past_mask & finite_vectors & (symbols == symbol)
-                ]
+                donor_values = values[past_mask & finite_vectors & (symbols == symbol)]
                 if not len(donor_values):
                     return None
                 future_positions = np.flatnonzero(future_mask & (symbols == symbol))

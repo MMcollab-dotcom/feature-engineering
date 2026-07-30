@@ -3,6 +3,11 @@ workspace:
 
 data:
   granularity: minutely
+  datetime_column: datetime
+  symbol_column: symbol
+  index_columns:
+    - datetime
+    - symbol
   features:
     - open
     - high
@@ -27,6 +32,13 @@ backtest:
   portfolio_ema_tail_hl_steps: 4
   portfolio_ema_switch_steps: 7
   target_norm_weight: 0.1
+  model_visible_metric_rounding:
+    sharpe_decimals: 2
+    return_decimals: 4
+    rate_decimals: 3
+    error_decimals: 5
+    mse_decimals: 8
+    correlation_decimals: 3
 
 agent:
   max_research_attempts: 50
@@ -57,7 +69,3 @@ reward:
     - cagr
     - max_drawdown
     - pearson_ic
-
-harbor:
-  submission_path: /app/submission
-  primary_metric: sharpe

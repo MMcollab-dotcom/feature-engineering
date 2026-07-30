@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from datetime import UTC, datetime
-import json
 from typing import Any
 
 
@@ -167,7 +167,10 @@ def _parse_backtest(payload: dict[str, Any]) -> BacktestRequest | ProtocolError:
     if model_id is None:
         return ProtocolError(
             error_code="missing_model_id",
-            message="Backtest action requires a model_id from a successful train_model action.",
+            message=(
+                "Backtest action requires a model_id from a successful "
+                "train_model action."
+            ),
             suggested_correction=(
                 "Call train_model, query get_train_model_result, then call backtest "
                 "with the returned model_id."

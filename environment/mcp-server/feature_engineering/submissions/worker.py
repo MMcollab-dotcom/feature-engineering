@@ -3,23 +3,23 @@
 from __future__ import annotations
 
 import builtins
-from dataclasses import dataclass
 import hashlib
 import math
-from collections.abc import Mapping
-from pathlib import Path
 import sys
 import types
+from collections.abc import Mapping
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import joblib
 import numpy as np
 import pandas as pd
 import sklearn
-from evalenv_shared.worker.program import WorkerProgram
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted
 
+from evalenv_shared.worker.program import WorkerProgram
 from feature_engineering.submissions.dataframes import (
     canonical_prediction_frame,
     read_dataframe,
@@ -29,7 +29,6 @@ from feature_engineering.submissions.validation import (
     submitted_module_name,
     validate_model_code,
 )
-
 
 SERIALIZATION_POLICY = "joblib-v1-protocol5-uncompressed"
 SAFE_BUILTINS = {
@@ -117,7 +116,9 @@ class FeatureEngineeringWorkerHandler:
         y = read_dataframe(Path.cwd(), request.get("y"))
         if not y.index.equals(X.index):
             raise ValueError("Worker training DataFrame indexes do not match.")
-        allowed_imports = tuple(str(value) for value in request.get("allowed_imports", ()))
+        allowed_imports = tuple(
+            str(value) for value in request.get("allowed_imports", ())
+        )
         module = _load_submitted_module(
             code,
             expected_source_hash=str(request.get("expected_source_hash") or ""),
@@ -186,8 +187,7 @@ class FeatureEngineeringWorkerHandler:
                 "expected_inference_columns",
             )
         prediction_error_code = str(
-            request.get("prediction_error_code")
-            or "model_prediction_validation_failed"
+            request.get("prediction_error_code") or "model_prediction_validation_failed"
         )
         if prediction_error_code not in {
             "model_prediction_validation_failed",
@@ -249,7 +249,9 @@ def _predict_once(
     if missing:
         return _failure(
             "inference_columns_missing",
-            ValueError(f"Prediction data is missing inference column(s): {', '.join(missing)}"),
+            ValueError(
+                f"Prediction data is missing inference column(s): {', '.join(missing)}"
+            ),
         )
 
     prediction: pd.DataFrame | None = None
@@ -307,7 +309,11 @@ def _sha256_file(path: Path) -> str:
 
 
 def _string_list(value: Any, name: str) -> list[str]:
-    if not isinstance(value, list) or not value or not all(isinstance(item, str) for item in value):
+    if (
+        not isinstance(value, list)
+        or not value
+        or not all(isinstance(item, str) for item in value)
+    ):
         raise ValueError(f"Worker request {name} must be a non-empty string list.")
     if len(set(value)) != len(value):
         raise ValueError(f"Worker request {name} must contain unique values.")
@@ -332,7 +338,9 @@ def _load_submitted_module(
 ) -> types.ModuleType:
     source_hash = hashlib.sha256(code.encode("utf-8")).hexdigest()
     if source_hash != expected_source_hash:
-        raise RuntimeError("Submitted model source hash does not match trusted metadata.")
+        raise RuntimeError(
+            "Submitted model source hash does not match trusted metadata."
+        )
     module_name = submitted_module_name(source_hash)
     module = types.ModuleType(module_name)
     module.__dict__.update(
@@ -380,18 +388,43 @@ def _patch_library_file_io(module: Any) -> None:
     root = str(getattr(module, "__name__", "")).split(".", 1)[0]
     if root == "pandas":
         for name in (
-            "ExcelFile", "HDFStore", "read_clipboard", "read_csv", "read_excel",
-            "read_feather", "read_fwf", "read_gbq", "read_hdf", "read_html",
-            "read_json", "read_orc", "read_parquet", "read_pickle", "read_sas",
-            "read_spss", "read_sql", "read_sql_query", "read_sql_table", "read_stata",
-            "read_table", "read_xml", "to_pickle",
+            "ExcelFile",
+            "HDFStore",
+            "read_clipboard",
+            "read_csv",
+            "read_excel",
+            "read_feather",
+            "read_fwf",
+            "read_gbq",
+            "read_hdf",
+            "read_html",
+            "read_json",
+            "read_orc",
+            "read_parquet",
+            "read_pickle",
+            "read_sas",
+            "read_spss",
+            "read_sql",
+            "read_sql_query",
+            "read_sql_table",
+            "read_stata",
+            "read_table",
+            "read_xml",
+            "to_pickle",
         ):
             if hasattr(pd, name):
                 setattr(pd, name, _blocked_file_io)
         for pandas_type in (pd.DataFrame, pd.Series):
             for method_name in (
-                "to_csv", "to_excel", "to_feather", "to_hdf", "to_json",
-                "to_parquet", "to_pickle", "to_sql", "to_stata",
+                "to_csv",
+                "to_excel",
+                "to_feather",
+                "to_hdf",
+                "to_json",
+                "to_parquet",
+                "to_pickle",
+                "to_sql",
+                "to_stata",
             ):
                 if hasattr(pandas_type, method_name):
                     setattr(pandas_type, method_name, _blocked_file_io)
@@ -399,8 +432,15 @@ def _patch_library_file_io(module: Any) -> None:
             pd.io.common.get_handle = _blocked_file_io
     elif root == "numpy":
         for name in (
-            "fromfile", "genfromtxt", "load", "loadtxt", "memmap", "save",
-            "savetxt", "savez", "savez_compressed",
+            "fromfile",
+            "genfromtxt",
+            "load",
+            "loadtxt",
+            "memmap",
+            "save",
+            "savetxt",
+            "savez",
+            "savez_compressed",
         ):
             if hasattr(np, name):
                 setattr(np, name, _blocked_file_io)
@@ -410,10 +450,18 @@ def _patch_library_file_io(module: Any) -> None:
         except ImportError:
             return
         for name in (
-            "fetch_20newsgroups", "fetch_california_housing", "fetch_covtype",
-            "fetch_kddcup99", "fetch_lfw_pairs", "fetch_lfw_people",
-            "fetch_olivetti_faces", "fetch_openml", "fetch_rcv1",
-            "fetch_species_distributions", "load_files", "load_svmlight_file",
+            "fetch_20newsgroups",
+            "fetch_california_housing",
+            "fetch_covtype",
+            "fetch_kddcup99",
+            "fetch_lfw_pairs",
+            "fetch_lfw_people",
+            "fetch_olivetti_faces",
+            "fetch_openml",
+            "fetch_rcv1",
+            "fetch_species_distributions",
+            "load_files",
+            "load_svmlight_file",
             "load_svmlight_files",
         ):
             if hasattr(datasets, name):

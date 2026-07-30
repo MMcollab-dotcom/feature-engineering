@@ -59,7 +59,10 @@ async def score_official_strategy(
         replace_model_id=strategy.model_id,
     )
     if refit.error is not None or refit.model is None:
-        if refit.error is not None and refit.error.error_code == "training_data_invalid":
+        if (
+            refit.error is not None
+            and refit.error.error_code == "training_data_invalid"
+        ):
             raise RuntimeError("Trusted full-public training data was invalid.")
         raise OfficialSubmittedCodeError(
             refit.error.error_code if refit.error is not None else "model_refit_failed"
@@ -74,8 +77,8 @@ async def score_official_strategy(
         public_data=hidden_data,
         strategy=strategy,
         registry=registry,
-        start=manifest["hidden_start_datetime"],
-        end=manifest["hidden_end_datetime"],
+        start=manifest["hidden_first_forecast_origin_datetime"],
+        end=manifest["hidden_last_realization_datetime"],
         audit_visibility="hidden_fixed",
         worker_host=worker_host,
     )

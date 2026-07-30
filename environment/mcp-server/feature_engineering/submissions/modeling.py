@@ -3,15 +3,15 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 from dataclasses import dataclass
 from datetime import datetime
-import hashlib
 from pathlib import Path
 from typing import Any
 
 import numpy as np
-from evalenv_shared.worker import WorkerProtocolError
 
+from evalenv_shared.worker import WorkerProtocolError
 from feature_engineering.config import TaskConfig
 from feature_engineering.core.fixed_data import SupervisedData
 from feature_engineering.core.portfolio import (
@@ -280,13 +280,15 @@ async def evaluate_model_code_async(
             )
         if fitted.get("serialization_policy") != validated.serialization_policy:
             raise WorkerProtocolError(
-                "Training and validation workers returned incompatible serialization policies."
+                "Training and validation workers returned incompatible "
+                "serialization policies."
             )
         fit_versions = fitted.get("package_versions")
         validation_versions = validated.package_versions
         if not isinstance(fit_versions, dict) or fit_versions != validation_versions:
             raise WorkerProtocolError(
-                "Training and validation workers returned incompatible package versions."
+                "Training and validation workers returned incompatible "
+                "package versions."
             )
 
         predictions = validated.frame
@@ -356,6 +358,7 @@ async def evaluate_model_code_async(
             feature_names=validated.inference_columns,
             target_names=target_names,
         )
+
 
 def _worker_model_error(error: WorkerExecutionError, *, operation: str) -> ModelError:
     if error.error_code == "invalid_fitted_estimator":

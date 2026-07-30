@@ -34,7 +34,7 @@ services:
       - no-new-privileges:true
     pids_limit: 64
     healthcheck:
-      test: ["CMD", "python", "-c", "from pathlib import Path; raise SystemExit(not Path('/exchange/worker.sock').exists())"]
+      test: ["CMD", "feature-engineering-worker-server", "--healthcheck"]
       interval: 2s
       timeout: 5s
       retries: 30

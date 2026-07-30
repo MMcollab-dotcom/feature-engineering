@@ -82,9 +82,7 @@ def optimise_linear_position(
     if beta_norm_squared > np.finfo("float64").eps:
         projection -= np.outer(beta, beta) / beta_norm_squared
     projected_mu = projection @ mu
-    projected_matrix = np.concatenate(
-        (matrix @ projection, projection), axis=0
-    )
+    projected_matrix = np.concatenate((matrix @ projection, projection), axis=0)
     projected_offset = np.concatenate((offset, np.zeros(size)))
     dual_bound = np.concatenate(
         (
@@ -116,9 +114,7 @@ def optimise_linear_position(
                 bound=dual_bound,
                 initial=dual,
             )
-        allocation = (
-            projected_mu - projected_matrix.T @ dual
-        ) / quadratic_penalty
+        allocation = (projected_mu - projected_matrix.T @ dual) / quadratic_penalty
 
     constraint_tolerance = max(1.0e-8, 10.0 * tolerance)
     gross = float(np.abs(allocation).sum())
@@ -231,7 +227,7 @@ def _solve_gross_constrained_qp(
             0.5 * quadratic_penalty * (allocation @ allocation)
             - expected_returns @ allocation
             + execution_cost * turnover.sum()
-            + 0.5 * future_decay_cost * values[2 * size :].sum()
+            + future_decay_cost * values[2 * size :].sum()
         )
 
     def gradient(values: np.ndarray) -> np.ndarray:
@@ -240,7 +236,7 @@ def _solve_gross_constrained_qp(
             (
                 quadratic_penalty * allocation - expected_returns,
                 np.full(size, execution_cost),
-                np.full(size, 0.5 * future_decay_cost),
+                np.full(size, future_decay_cost),
             )
         )
 
@@ -317,36 +313,31 @@ def _polish_dual(
         zero_trade = status == 0
         nonzero_trade = ~zero_trade
         polished = np.zeros(matrix.shape[0], dtype="float64")
-        polished[nonzero_trade] = (
-            bound[nonzero_trade] * status[nonzero_trade]
-        )
+        polished[nonzero_trade] = bound[nonzero_trade] * status[nonzero_trade]
         q0 = (
-            expected_returns
-            - matrix[nonzero_trade].T @ polished[nonzero_trade]
+            expected_returns - matrix[nonzero_trade].T @ polished[nonzero_trade]
         ) / quadratic_penalty
         if np.any(zero_trade):
             equality = matrix[zero_trade]
             error = equality @ q0 + offset[zero_trade]
-            multiplier = quadratic_penalty * np.linalg.lstsq(
-                equality @ equality.T, error, rcond=1.0e-12
-            )[0]
+            multiplier = (
+                quadratic_penalty
+                * np.linalg.lstsq(equality @ equality.T, error, rcond=1.0e-12)[0]
+            )
             q = q0 - equality.T @ multiplier / quadratic_penalty
             polished[zero_trade] = multiplier
         else:
             q = q0
         trade = offset + matrix @ q
-        stationarity = (
-            quadratic_penalty * q
-            - expected_returns
-            + matrix.T @ polished
-        )
+        stationarity = quadratic_penalty * q - expected_returns + matrix.T @ polished
         if np.any(np.abs(polished) > bound + 1.0e-10):
             return None
         if np.any(zero_trade) and np.max(np.abs(trade[zero_trade])) > 1.0e-9:
             return None
-        if np.any(nonzero_trade) and np.min(
-            status[nonzero_trade] * trade[nonzero_trade]
-        ) < -1.0e-9:
+        if (
+            np.any(nonzero_trade)
+            and np.min(status[nonzero_trade] * trade[nonzero_trade]) < -1.0e-9
+        ):
             return None
         if np.max(np.abs(stationarity)) > 1.0e-10:
             return None

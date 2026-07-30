@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import pandas as pd
 
-
 _GRANULARITY_DELTAS = {
     "minutely": pd.Timedelta(minutes=1),
     "hourly": pd.Timedelta(hours=1),

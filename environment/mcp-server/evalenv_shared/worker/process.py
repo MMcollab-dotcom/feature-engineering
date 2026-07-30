@@ -59,7 +59,6 @@ class WorkerProcess:
     def stderr_tail(self) -> str:
         return self._stderr_tail[-STDERR_TAIL_CHARS:]
 
-
     async def terminate(self) -> None:
         if self.process.returncode is None:
             self.process.terminate()

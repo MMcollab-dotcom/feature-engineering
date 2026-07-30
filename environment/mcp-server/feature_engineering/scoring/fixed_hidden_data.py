@@ -9,7 +9,9 @@ import pandas as pd
 
 from feature_engineering.config import TaskConfig
 from feature_engineering.core.fixed_data import SupervisedData
-from feature_engineering.submissions.causal_audit import validate_fixed_prediction_window
+from feature_engineering.submissions.causal_audit import (
+    validate_fixed_prediction_window,
+)
 
 
 def load_hidden_supervised_data(
@@ -24,7 +26,12 @@ def load_hidden_supervised_data(
     hidden_path = (manifest_path.parent / payload["hidden_path"]).resolve()
     hidden = pd.read_parquet(hidden_path)
     data = public_config.data
-    required = {*data.index_columns, *data.features, *data.targets, *data.scoring_columns}
+    required = {
+        *data.index_columns,
+        *data.features,
+        *data.targets,
+        *data.scoring_columns,
+    }
     missing = sorted(required - set(hidden.columns))
     if missing:
         raise ValueError(f"Hidden data missing column(s): {', '.join(missing)}")
@@ -40,8 +47,8 @@ def load_hidden_supervised_data(
         target_columns=public_data.target_columns,
         datetimes=pd.Index(hidden[data.datetime_column].drop_duplicates()),
         symbols=public_data.symbols,
-        start_datetime=pd.Timestamp(payload["hidden_start_datetime"]),
-        end_datetime=pd.Timestamp(payload["hidden_end_datetime"]),
+        start_datetime=pd.Timestamp(payload["hidden_first_forecast_origin_datetime"]),
+        end_datetime=pd.Timestamp(payload["hidden_last_realization_datetime"]),
         manifest_sha256=public_data.manifest_sha256,
     )
     validate_fixed_prediction_window(

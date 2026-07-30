@@ -2,18 +2,17 @@
 
 from __future__ import annotations
 
-from contextlib import contextmanager
-from dataclasses import dataclass
 import hashlib
 import math
 import os
-from pathlib import Path
 import shutil
 import stat
 import tempfile
+from contextlib import contextmanager
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Iterator, Mapping, Sequence
 from uuid import uuid4
-
 
 MAX_ARTIFACT_BYTES = 1024 * 1024 * 1024
 MAX_COMMITTED_BYTES = 8 * 1024 * 1024 * 1024
@@ -31,7 +30,8 @@ class ArtifactTooLargeError(Exception):
             "limit_bytes": MAX_ARTIFACT_BYTES,
         }
         super().__init__(
-            f"Model artifact is {artifact_bytes} bytes; limit is {MAX_ARTIFACT_BYTES} bytes."
+            f"Model artifact is {artifact_bytes} bytes; "
+            f"limit is {MAX_ARTIFACT_BYTES} bytes."
         )
 
 

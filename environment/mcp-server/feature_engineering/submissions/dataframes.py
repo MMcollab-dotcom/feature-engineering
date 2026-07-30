@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import hashlib
 import os
-from pathlib import Path
 import re
 import stat
 import tempfile
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -18,7 +18,6 @@ import pyarrow.ipc as ipc
 from feature_engineering.config import TaskConfig
 from feature_engineering.core.fixed_data import SupervisedData
 from feature_engineering.core.granularity import forecast_origin_end_datetime
-
 
 MAX_DATAFRAME_ARROW_BYTES = 2 * 1024 * 1024 * 1024
 _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
@@ -67,11 +66,15 @@ def build_training_frames(
         names=[data.datetime_column, data.symbol_column],
     )
     if not index.is_unique:
-        raise ValueError("Training frame index must contain unique datetime/symbol keys.")
+        raise ValueError(
+            "Training frame index must contain unique datetime/symbol keys."
+        )
 
     X = pd.DataFrame(index=index)
     X[data.datetime_column] = pd.Series(datetimes.array, index=index)
-    X[data.symbol_column] = pd.Series(symbols.to_numpy(dtype=object), index=index, dtype=object)
+    X[data.symbol_column] = pd.Series(
+        symbols.to_numpy(dtype=object), index=index, dtype=object
+    )
     for name in feature_names:
         X[name] = pd.Series(
             frame[name].to_numpy(dtype="float64"),
@@ -111,11 +114,15 @@ def build_prediction_frame(
         names=[data.datetime_column, data.symbol_column],
     )
     if not index.is_unique:
-        raise ValueError("Prediction frame index must contain unique datetime/symbol keys.")
+        raise ValueError(
+            "Prediction frame index must contain unique datetime/symbol keys."
+        )
 
     X = pd.DataFrame(index=index)
     X[data.datetime_column] = pd.Series(datetimes.array, index=index)
-    X[data.symbol_column] = pd.Series(symbols.to_numpy(dtype=object), index=index, dtype=object)
+    X[data.symbol_column] = pd.Series(
+        symbols.to_numpy(dtype=object), index=index, dtype=object
+    )
     for name in feature_names:
         X[name] = pd.Series(
             rows[name].to_numpy(dtype="float64"),
@@ -170,7 +177,9 @@ def read_dataframe(
     if expected_rows is not None and descriptor["row_count"] != expected_rows:
         raise ValueError("Worker DataFrame row count does not match the expected rows.")
     if max_bytes is not None and descriptor["byte_count"] > max_bytes:
-        raise ValueError("Worker DataFrame Arrow file exceeds the operation-specific limit.")
+        raise ValueError(
+            "Worker DataFrame Arrow file exceeds the operation-specific limit."
+        )
     source = Path(directory) / descriptor["name"]
     source_stat = _regular_file_stat(source)
     if source_stat.st_size != descriptor["byte_count"]:
@@ -183,7 +192,9 @@ def read_dataframe(
     if table.num_rows != descriptor["row_count"]:
         raise ValueError("Worker DataFrame row count does not match its descriptor.")
     if expected_columns is not None and table.num_columns != expected_columns:
-        raise ValueError("Worker DataFrame column count does not match the expected schema.")
+        raise ValueError(
+            "Worker DataFrame column count does not match the expected schema."
+        )
     frame = table.to_pandas()
     _restore_object_dtypes(frame, table.schema.pandas_metadata or {})
     return frame

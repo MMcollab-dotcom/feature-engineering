@@ -501,7 +501,9 @@ async def _run_one_shot(
         env=_worker_env(workdir),
     )
     try:
-        payload = await session.request({"type": "feature_engineering_request", **request})
+        payload = await session.request(
+            {"type": "feature_engineering_request", **request}
+        )
     except (WorkerRemoteError, WorkerTimeoutError) as exc:
         await session.close()
         return _submitted_execution_error(
@@ -517,7 +519,9 @@ async def _run_one_shot(
     except BaseException:
         await session.close()
         raise
-    return _require_result_payload(payload, operation=str(request.get("mode") or "request"))
+    return _require_result_payload(
+        payload, operation=str(request.get("mode") or "request")
+    )
 
 
 def _require_result_payload(payload: Any, *, operation: str) -> dict[str, Any]:
@@ -543,7 +547,8 @@ def _submitted_execution_error(
         )
         if error_code not in SUBMITTED_WORKER_ERROR_CODES:
             raise WorkerProtocolError(
-                f"Submitted model worker returned unrecognized error code: {error_code!r}."
+                "Submitted model worker returned unrecognized error code: "
+                f"{error_code!r}."
             ) from exc
         private_messages = {
             "temporal_audit_input_insufficient": (
@@ -562,7 +567,9 @@ def _submitted_execution_error(
                 error_code,
                 _public_error_message(payload, source_hash=source_hash),
             ),
-            details=payload.get("details") if isinstance(payload.get("details"), dict) else None,
+            details=payload.get("details")
+            if isinstance(payload.get("details"), dict)
+            else None,
         )
     return WorkerExecutionError(
         timeout_code,

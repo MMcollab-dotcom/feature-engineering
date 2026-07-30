@@ -31,25 +31,25 @@ class EmaSmoothedPortfolioEngine:
 
         symbol_count = scaled_forecasts.shape[1]
         beta_norm_squared = np.sum(market_betas * market_betas, axis=1)
-        projected_forecasts = scaled_forecasts - market_betas * (
-            np.sum(market_betas * scaled_forecasts, axis=1) / beta_norm_squared
-        )[:, None]
+        projected_forecasts = (
+            scaled_forecasts
+            - market_betas
+            * (np.sum(market_betas * scaled_forecasts, axis=1) / beta_norm_squared)[
+                :, None
+            ]
+        )
         self.median_signal_size = float(
             np.median(np.abs(projected_forecasts).sum(axis=1))
         )
         if max_gross_exposure > 0.0 and self.median_signal_size > 0.0:
-            self.quadratic_penalty = (
-                2.0 * self.median_signal_size / max_gross_exposure
-            )
+            self.quadratic_penalty = self.median_signal_size / max_gross_exposure
         else:
             self.quadratic_penalty = 1.0
 
         ema_decay = 2.0 ** (-1.0 / config.portfolio_ema_hl_steps)
         ema_alpha = 1.0 - ema_decay
         self.ema_decay = ema_decay
-        self.ema_tail_decay = 2.0 ** (
-            -1.0 / config.portfolio_ema_tail_hl_steps
-        )
+        self.ema_tail_decay = 2.0 ** (-1.0 / config.portfolio_ema_tail_hl_steps)
         switch_steps = config.portfolio_ema_switch_steps
         ema_kernel_mass = (
             1.0
@@ -79,9 +79,7 @@ class EmaSmoothedPortfolioEngine:
         exiting = self.ema_front[slot].copy()
         self.ema_front[slot] = 0.0
         self.ema_front = self.ema_decay * (self.ema_front @ projection.T)
-        self.ema_tail = self.ema_tail_decay * (
-            projection @ (self.ema_tail + exiting)
-        )
+        self.ema_tail = self.ema_tail_decay * (projection @ (self.ema_tail + exiting))
         older = self.ema_front.sum(axis=0) + self.ema_tail
         position_map = self.ema_entry_weight * projection
         solved = optimise_linear_position(
@@ -100,9 +98,7 @@ class EmaSmoothedPortfolioEngine:
         self.ema_front[slot] = position_map @ solved.allocation
         target = older + self.ema_front[slot]
         gross = float(np.abs(target).sum())
-        gross_overlay = (
-            min(1.0, self.max_gross_exposure / gross) if gross else 1.0
-        )
+        gross_overlay = min(1.0, self.max_gross_exposure / gross) if gross else 1.0
         target = gross_overlay * target
         self.ema_front *= gross_overlay
         self.ema_tail *= gross_overlay

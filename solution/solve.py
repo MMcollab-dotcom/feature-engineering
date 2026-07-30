@@ -10,7 +10,7 @@ from mcp import ClientSession
 from mcp.client.streamable_http import streamable_http_client
 
 MCP_URL = "http://mcp-server:8000/mcp"
-MODEL_CODE = r'''import numpy as np
+MODEL_CODE = r"""import numpy as np
 import pandas as pd
 
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -61,7 +61,7 @@ def train_model(X, y):
         elasticnet__sample_weight=weight,
     )
     return model
-'''
+"""
 
 
 def _payload(result) -> dict:

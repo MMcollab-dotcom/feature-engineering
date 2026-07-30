@@ -41,5 +41,3 @@ class WorkerTimeoutError(WorkerError):
     ) -> None:
         self.timeout_s = float(timeout_s)
         super().__init__(message, stderr_tail=stderr_tail)
-
-

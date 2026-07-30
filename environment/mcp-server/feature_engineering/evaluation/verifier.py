@@ -25,7 +25,6 @@ async def verify_submission(
     metrics_path: str | Path = DEFAULT_METRICS_PATH,
 ) -> dict[str, float]:
     from evalenv_shared.worker.socket_host import UnixSocketWorkerHost
-
     from feature_engineering.config import load_task_config
     from feature_engineering.core.fixed_data import load_supervised_data
     from feature_engineering.scoring.official import score_official_strategy

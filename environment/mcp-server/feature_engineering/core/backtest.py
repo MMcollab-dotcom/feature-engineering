@@ -9,7 +9,6 @@ from typing import Any
 import pandas as pd
 
 from evalenv_shared.worker import WorkerProtocolError
-
 from feature_engineering.config import (
     MetricRoundingConfig,
     TaskConfig,
@@ -17,19 +16,18 @@ from feature_engineering.config import (
 from feature_engineering.core.fixed_data import SupervisedData
 from feature_engineering.core.granularity import forecast_origin_end_datetime
 from feature_engineering.core.portfolio import execute_backtest
-from feature_engineering.submissions.strategy import CompiledStrategy
-from feature_engineering.submissions.strategy import StrategyError
-from feature_engineering.submissions.registry import TrainedModelRegistry
+from feature_engineering.submissions.causal_audit import audit_summary
 from feature_engineering.submissions.dataframes import (
     build_prediction_frame,
     write_dataframe,
 )
-from feature_engineering.submissions.causal_audit import audit_summary
+from feature_engineering.submissions.registry import TrainedModelRegistry
 from feature_engineering.submissions.runner import (
     WorkerExecutionError,
     is_submitted_prediction_failure,
     predict_artifact,
 )
+from feature_engineering.submissions.strategy import CompiledStrategy, StrategyError
 
 
 @dataclass(frozen=True, slots=True)
@@ -205,11 +203,11 @@ def _round_metric(
         "turnover",
     }:
         decimals = rounding.return_decimals
-    elif key in {
-        "directional_accuracy",
-    }:
+    elif key == "directional_accuracy":
         decimals = rounding.rate_decimals
-    elif key == "prediction_return_rank_correlation":
+    elif key == "mse":
+        decimals = rounding.mse_decimals
+    elif key in {"correlation", "prediction_return_rank_correlation"}:
         decimals = rounding.correlation_decimals
     else:
         decimals = rounding.error_decimals

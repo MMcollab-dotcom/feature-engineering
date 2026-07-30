@@ -6,7 +6,6 @@ import ast
 from dataclasses import dataclass
 from typing import Any
 
-
 SUBMITTED_MODULE_PREFIX = "submitted_feature_model_"
 
 

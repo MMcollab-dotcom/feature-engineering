@@ -10,8 +10,8 @@ import pandas as pd
 
 from feature_engineering.config import TaskConfig
 from feature_engineering.core.costs import linear_fee_rate
-from feature_engineering.core.fixed_data import SupervisedData
 from feature_engineering.core.ema_smoothed_engine import EmaSmoothedPortfolioEngine
+from feature_engineering.core.fixed_data import SupervisedData
 from feature_engineering.core.granularity import (
     forecast_origin_end_datetime,
     granularity_delta,
@@ -19,7 +19,6 @@ from feature_engineering.core.granularity import (
 from feature_engineering.core.portfolio_engine import RebalanceRequest
 from feature_engineering.core.reward import rank_correlation
 from feature_engineering.submissions.strategy import CompiledStrategy, StrategyError
-
 
 FORECAST_SCALE_EPSILON = 1.0e-8
 FORECAST_SCALE_SHRINKAGE = 0.65
@@ -160,8 +159,10 @@ def execute_backtest(
     symbol_count = len(symbols)
 
     def column_matrix(column: str) -> np.ndarray:
-        return frame[column].to_numpy(dtype="float64")[row_positions].reshape(
-            step_count, symbol_count
+        return (
+            frame[column]
+            .to_numpy(dtype="float64")[row_positions]
+            .reshape(step_count, symbol_count)
         )
 
     forecast_scale = float(forecast_scale)
@@ -377,9 +378,7 @@ def execute_backtest(
 
 
 def _symbol_values(symbols: tuple[str, ...], values: np.ndarray) -> dict[str, float]:
-    return {
-        symbol: float(values[index]) for index, symbol in enumerate(symbols)
-    }
+    return {symbol: float(values[index]) for index, symbol in enumerate(symbols)}
 
 
 def _materialize_trace_steps(

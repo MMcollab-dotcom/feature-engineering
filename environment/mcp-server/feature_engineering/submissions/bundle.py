@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 import hashlib
 import json
 import os
-from pathlib import Path, PurePosixPath
 import tempfile
+from collections.abc import Mapping
+from pathlib import Path, PurePosixPath
 from typing import Any
 from uuid import uuid4
 
@@ -17,7 +17,6 @@ from feature_engineering.submissions.registry import (
     _copy_and_hash,
     _remove_tree,
 )
-
 
 SCHEMA_VERSION = "feature_engineering_submission_v1"
 BUNDLE_PREFIX = PurePosixPath("feature_engineering/submissions")
@@ -103,7 +102,8 @@ def promote_submission_bundle(
             os.replace(temporary_directory, final_directory)
         except OSError as exc:
             raise FeatureEngineeringArtifactError(
-                "Could not atomically install the feature-engineering submission bundle."
+                "Could not atomically install the feature-engineering "
+                "submission bundle."
             ) from exc
         renamed = True
         _fsync_directory(submissions_root)
@@ -231,7 +231,8 @@ def _resolve_bundle_path(root: Path, bundle_path: str) -> Path:
     directory = root.joinpath(*relative.parts).resolve()
     if not directory.is_relative_to(root):
         raise FeatureEngineeringArtifactError(
-            f"Feature-engineering submission bundle path escapes task_outputs: {bundle_path}"
+            "Feature-engineering submission bundle path escapes "
+            f"task_outputs: {bundle_path}"
         )
     return directory
 
