@@ -42,6 +42,28 @@ demonstration. External-provider use is not yet cleared; read
 [`DATA_PROVENANCE.md`](DATA_PROVENANCE.md) before exporting an API key or
 starting an OpenAI or Anthropic run.
 
+### Tests
+
+From the repository root, run the complete Python test suite with:
+
+```sh
+uv run --project environment/mcp-server test
+```
+
+The failure-path tests intentionally print exception traces. A successful run
+ends with `OK`.
+
+This command covers the local Python tests. Harbor's Docker-based task and
+verifier runs remain separate and use the commands below.
+
+Run the configured lint checks from the repository root with:
+
+```sh
+uvx ruff check environment/mcp-server/feature_engineering \
+  environment/mcp-server/evalenv_shared environment/mcp-server/tests solution
+```
+
+
 ### Local oracle
 
 ```sh
@@ -71,32 +93,6 @@ agent receives the listed built-in tools plus the task's five MCP tools;
 subagents retain their native tool policies and do not receive the task MCP
 configuration.
 
-### OpenAI Codex
-
-After the data-use clearance in `DATA_PROVENANCE.md` is signed, run the
-OpenAI Codex adapter with the tested Harbor and CLI versions:
-
-```sh
-export OPENAI_API_KEY=...
-uvx harbor==0.20.0 run -p . -a codex -m gpt-5.4 \
-  --agent-kwarg version=0.146.0 \
-  -e docker -n 1
-```
-
-### Anthropic Claude Code
-
-After the same clearance is signed, run the Anthropic adapter with:
-
-```sh
-export ANTHROPIC_API_KEY=...
-uvx harbor==0.20.0 run -p . -a claude-code -m claude-sonnet-4-6 \
-  --agent-kwarg version=2.1.220 \
-  -e docker -n 1
-```
-
-The CLI pins are intentional: without `--agent-kwarg version=...`, Harbor
-installs the latest agent CLI, making later runs harder to reproduce.
-
 ## Runtime and reference result
 
 The configured limits are 30 minutes for environment build, four hours for the
@@ -104,11 +100,6 @@ agent, and one hour for verification. Cached local builds are much faster. A
 representative Harbor run on 2026-07-29 took 20 minutes 53 seconds end to end:
 14 seconds for environment setup, 28 seconds for agent setup, 16 minutes
 40 seconds for agent execution, and 3 minutes 11 seconds for verification.
-
-The retained release-audit reference strategy produced public Sharpe `1.56`
-and hidden reward/Sharpe `0.1739`. A separate Kimi/OpenAI agent run produced
-hidden reward/Sharpe `0.3874`. These are reproducibility landmarks, not a pass
-threshold; compare scores only on the same task commit.
 
 ## Troubleshooting
 
@@ -129,5 +120,6 @@ threshold; compare scores only on the same task commit.
   `verifier/reward.json`. Submitted artifacts are collected from the
   `mcp-server` service, not the agent container.
 
-The verifier writes numeric `reward.json` fields for `reward`, `sharpe`, `cagr`,
-`max_drawdown`, and `pearson_ic`; Sharpe is the scalar reward.
+The verifier writes numeric `reward.json` fields for `primary_score`, `reward`,
+`sharpe`, `cagr`, `max_drawdown`, and `pearson_ic`. `primary_score`, `reward`,
+and `sharpe` are the same hidden after-cost Sharpe value.
