@@ -4,7 +4,6 @@ on:
   pull_request:
     paths:
       - ".github/workflows/docker.yml"
-      - ".github/dependabot.yml"
       - ".dockerignore"
       - "test-docker.sh"
       - "tests/docker_contracts.py"
@@ -21,7 +20,6 @@ on:
       - main
     paths:
       - ".github/workflows/docker.yml"
-      - ".github/dependabot.yml"
       - ".dockerignore"
       - "test-docker.sh"
       - "tests/docker_contracts.py"
