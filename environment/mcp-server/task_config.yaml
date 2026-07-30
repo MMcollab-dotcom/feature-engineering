@@ -41,7 +41,7 @@ backtest:
     correlation_decimals: 3
 
 agent:
-  max_research_attempts: 50
+  max_research_attempts: 100
   response_error_budget: 10
 
 prediction:
