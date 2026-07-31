@@ -121,6 +121,9 @@ representative Harbor run on 2026-07-29 took 20 minutes 53 seconds end to end:
   `verifier/reward.json`. Submitted artifacts are collected from the
   `mcp-server` service, not the agent container.
 
-The verifier writes numeric `reward.json` fields for `primary_score`, `reward`,
-`sharpe`, `cagr`, `max_drawdown`, and `pearson_ic`. `primary_score`, `reward`,
-and `sharpe` are the same hidden after-cost Sharpe value.
+The verifier writes Harbor-compatible numeric reward fields to
+`reward.json`: `primary_score`, `reward`, `sharpe`, `cagr`, `max_drawdown`, and
+`pearson_ic`. `primary_score`, `reward`, and `sharpe` are the same hidden
+after-cost Sharpe value. `metrics.json` is a separate diagnostic artifact
+containing the full official scoring payload, including the complete backtest
+metrics, causal-audit result, and refit diagnostics.

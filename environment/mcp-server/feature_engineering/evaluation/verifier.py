@@ -28,6 +28,7 @@ REWARD_FIELDS = (
 
 def _write_outputs(
     rewards: dict[str, float],
+    metrics: dict[str, object],
     *,
     reward_path: str | Path,
     metrics_path: str | Path,
@@ -41,7 +42,7 @@ def _write_outputs(
         encoding="utf-8",
     )
     metrics_file.write_text(
-        json.dumps(rewards, sort_keys=True, allow_nan=False, indent=2) + "\n",
+        json.dumps(metrics, sort_keys=True, allow_nan=False, indent=2) + "\n",
         encoding="utf-8",
     )
 
@@ -77,6 +78,7 @@ async def verify_submission(
         }
         _write_outputs(
             rewards,
+            {"ok": False, "metrics": rewards},
             reward_path=reward_path,
             metrics_path=metrics_path,
         )
@@ -152,6 +154,7 @@ async def verify_submission(
 
     _write_outputs(
         rewards,
+        scored,
         reward_path=reward_path,
         metrics_path=metrics_path,
     )

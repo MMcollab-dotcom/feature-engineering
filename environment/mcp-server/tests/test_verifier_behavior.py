@@ -188,7 +188,7 @@ class VerifierBehaviorTests(unittest.IsolatedAsyncioTestCase):
         )
         self.assertEqual(
             json.loads((self.root / "metrics.json").read_text(encoding="utf-8")),
-            expected,
+            {"ok": False, "metrics": expected},
         )
         score.assert_not_awaited()
 
@@ -336,6 +336,13 @@ class VerifierBehaviorTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(calls["hidden_artifact"], replacement_bytes)
         self.assertIs(calls["hidden_public_data"], calls["refit_public_data"])
         self.assertEqual(rewards["primary_score"], 1.25)
+        metrics = json.loads(
+            (self.root / "metrics.json").read_text(encoding="utf-8")
+        )
+        self.assertTrue(metrics["ok"])
+        self.assertEqual(metrics["primary_score"], 1.25)
+        self.assertEqual(metrics["metrics"]["annualized_sharpe"], 1.25)
+        self.assertEqual(metrics["causal_audit"], {"visibility": "hidden_fixed"})
 
     async def test_hidden_prediction_attachment_contains_no_outcome_columns(
         self,

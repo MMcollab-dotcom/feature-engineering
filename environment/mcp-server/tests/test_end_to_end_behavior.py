@@ -157,9 +157,15 @@ class EndToEndBehaviorTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(
                 json.loads(reward_path.read_text(encoding="utf-8")), rewards
             )
+            metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+            self.assertTrue(metrics["ok"])
+            self.assertEqual(metrics["primary_score"], rewards["primary_score"])
             self.assertEqual(
-                json.loads(metrics_path.read_text(encoding="utf-8")), rewards
+                metrics["metrics"]["annualized_sharpe"],
+                rewards["sharpe"],
             )
+            self.assertIn("fit_diagnostics", metrics)
+            self.assertNotEqual(metrics, rewards)
 
 
 if __name__ == "__main__":
