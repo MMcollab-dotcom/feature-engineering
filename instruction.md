@@ -24,3 +24,8 @@ the same type may not.
 
 Submit the `strategy_id` from your chosen successful backtest only after both
 operation slots are idle. Hidden 2024 scoring happens after the agent exits.
+
+Official verification does not score the estimator artifact fitted by the public
+training call. It imports the submitted source, calls `train_model` once on all
+2022–2023 public rows, and uses that newly fitted model for causal hidden 2024
+prediction and after-cost backtesting.

@@ -20,9 +20,12 @@ def train_model(X, y):
 ```
 
 The example shows the interface, not recommended features or hyperparameters.
-Every submitted candidate must use Elastic Net and pass
-`weight_std_dollar_vol` as fitting sample weight. Its top-level fitted sklearn
-estimator must expose unique ordered string `feature_names_in_` values.
+Every submitted candidate must return either an exact
+`sklearn.linear_model.ElasticNet` or an exact `sklearn.pipeline.Pipeline` whose
+final step is an exact `ElasticNet`. Subclasses and pipelines ending in another
+estimator are rejected. Pass `weight_std_dollar_vol` as fitting sample weight.
+The top-level fitted estimator must expose unique ordered string
+`feature_names_in_` values.
 
 `X` and `y` share a two-level `datetime`, `symbol` index. Prediction must return
 finite numeric values in the same row order. Accepted one-target shapes are
@@ -33,3 +36,17 @@ Submitted source may import only `math`, `statistics`, `numpy`, `pandas`, and
 bytes; every fit and prediction has a 1,800-second deadline. The returned model
 must serialize with Joblib, reload in a fresh process, and predict without
 calling `train_model` again.
+
+## Official full-public refit
+
+The fitted artifact associated with the submitted public backtest establishes
+submission provenance and validates the model contract, but it is not the model
+used for the hidden score. During verification, the submitted source is imported
+in the isolated model worker and `train_model` is called once with every public
+2022–2023 row. The resulting newly fitted estimator is serialized, reloaded,
+and used for causal prediction on the hidden 2024 batch before the after-cost
+backtest is scored.
+
+The submitted source and all learned preprocessing must therefore support a
+single fit over the complete public period. Hidden labels and scoring-only
+columns are never attached to the model's prediction input.

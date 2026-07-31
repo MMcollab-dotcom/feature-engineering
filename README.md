@@ -15,8 +15,11 @@ the two scoring columns remain available only to the MCP runtime.
 Harbor collects `/app/submission` directly from the MCP sidecar, tears the agent
 environment down, and starts a separate verifier. The verifier owns hidden data
 and sends only feature matrices and the submitted bundle to a networkless,
-read-only model-worker container. Submitted source import, fitting, Joblib load,
-and `.predict()` all happen in that worker; hidden labels never do.
+read-only model-worker container. The verifier imports the submitted source,
+refits it once on all public 2022–2023 rows, serializes and reloads that new
+estimator, and calls `.predict()` on hidden 2024 features. Hidden labels never
+enter the worker; the estimator artifact fitted during public research is not
+used for the hidden score.
 
 ## Run locally
 

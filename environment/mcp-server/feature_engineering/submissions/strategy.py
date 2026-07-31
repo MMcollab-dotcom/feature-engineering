@@ -50,24 +50,24 @@ def compile_model_strategy(
     if isinstance(max_gross_exposure, bool):
         return StrategyError(
             "invalid_max_gross_exposure",
-            "max_gross_exposure must be a finite number.",
+            "max_gross_exposure must be a finite positive number.",
         )
     try:
         requested = float(max_gross_exposure)
     except (TypeError, ValueError):
         return StrategyError(
             "invalid_max_gross_exposure",
-            "max_gross_exposure must be a finite number.",
+            "max_gross_exposure must be a finite positive number.",
         )
     if not math.isfinite(requested):
         return StrategyError(
             "invalid_max_gross_exposure",
-            "max_gross_exposure must be a finite number.",
+            "max_gross_exposure must be a finite positive number.",
         )
-    if requested < 0.0:
+    if requested <= 0.0:
         return StrategyError(
             "invalid_max_gross_exposure",
-            "max_gross_exposure must be non-negative.",
+            "max_gross_exposure must be a finite positive number.",
         )
 
     payload = {"max_gross_exposure": requested}

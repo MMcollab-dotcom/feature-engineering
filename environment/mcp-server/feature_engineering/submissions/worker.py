@@ -17,6 +17,8 @@ import numpy as np
 import pandas as pd
 import sklearn
 from sklearn.base import BaseEstimator
+from sklearn.linear_model import ElasticNet
+from sklearn.pipeline import Pipeline
 from sklearn.utils.validation import check_is_fitted
 
 from evalenv_shared.worker.program import WorkerProgram
@@ -272,6 +274,15 @@ def _validate_estimator(model: Any) -> tuple[str, ...] | dict[str, Any]:
         return _failure(
             "invalid_fitted_estimator",
             ValueError("train_model(X, y) must return one sklearn BaseEstimator."),
+        )
+    predictor = model.steps[-1][1] if type(model) is Pipeline and model.steps else model
+    if type(predictor) is not ElasticNet:
+        return _failure(
+            "invalid_fitted_estimator",
+            ValueError(
+                "The fitted model's final predictive estimator must be an exact "
+                "sklearn.linear_model.ElasticNet."
+            ),
         )
     try:
         check_is_fitted(model)

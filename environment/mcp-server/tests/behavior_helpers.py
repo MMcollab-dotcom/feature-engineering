@@ -36,45 +36,63 @@ SYMBOLS = tuple(f"symbol_{number:02d}" for number in range(1, 5))
 
 PAST_ONLY_MODEL_CODE = """\
 import numpy as np
-from sklearn.base import BaseEstimator
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.linear_model import ElasticNet
+from sklearn.pipeline import Pipeline
 
 
-class PastOnlyRegressor(BaseEstimator):
-    def fit(self, X, y):
+class PastOnlyFeatures(BaseEstimator, TransformerMixin):
+    def fit(self, X, y=None):
         self.feature_names_in_ = np.asarray(X.columns, dtype=object)
         self.n_features_in_ = len(self.feature_names_in_)
-        design = X.loc[:, ["open", "close"]].to_numpy(dtype=float)
-        self.coef_ = np.linalg.lstsq(design, np.asarray(y).reshape(-1), rcond=None)[0]
         return self
 
-    def predict(self, X):
-        design = X.loc[:, ["open", "close"]].to_numpy(dtype=float)
-        return design @ self.coef_
+    def transform(self, X):
+        return X.loc[:, ["open", "close"]].to_numpy(dtype=float)
 
 
 def train_model(X, y):
-    return PastOnlyRegressor().fit(X, y)
+    model = Pipeline(
+        [
+            ("features", PastOnlyFeatures()),
+            (
+                "elasticnet",
+                ElasticNet(alpha=1.0e-6, l1_ratio=0.5, max_iter=10000),
+            ),
+        ]
+    )
+    return model.fit(X, np.asarray(y).reshape(-1))
 """
 
 FUTURE_DEPENDENT_MODEL_CODE = """\
 import numpy as np
-from sklearn.base import BaseEstimator
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.linear_model import ElasticNet
+from sklearn.pipeline import Pipeline
 
 
-class FutureDependentRegressor(BaseEstimator):
-    def fit(self, X, y):
+class FutureDependentFeatures(BaseEstimator, TransformerMixin):
+    def fit(self, X, y=None):
         self.feature_names_in_ = np.asarray(X.columns, dtype=object)
         self.n_features_in_ = len(self.feature_names_in_)
-        self.training_mean_ = float(np.asarray(y).reshape(-1).mean())
         return self
 
-    def predict(self, X):
-        values = X.loc[:, self.feature_names_in_].to_numpy(dtype=float)
-        return values[:, 0] - values[:, 0].mean() + self.training_mean_
+    def transform(self, X):
+        values = X.loc[:, ["open"]].to_numpy(dtype=float)
+        return values - values.mean(axis=0)
 
 
 def train_model(X, y):
-    return FutureDependentRegressor().fit(X, y)
+    model = Pipeline(
+        [
+            ("features", FutureDependentFeatures()),
+            (
+                "elasticnet",
+                ElasticNet(alpha=1.0e-6, l1_ratio=0.5, max_iter=10000),
+            ),
+        ]
+    )
+    return model.fit(X, np.asarray(y).reshape(-1))
 """
 
 

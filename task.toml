@@ -3,14 +3,14 @@ artifacts = [{ source = "/app/submission", service = "mcp-server" }]
 
 [task]
 name = "mmcollab-dotcom/feature-engineering"
-description = "Engineer causal features and submit one calibrated forecast strategy on a fixed public/hidden crypto split."
+description = "Engineer causal features and submit one calibrated quantitative-ML trading strategy on a fixed public/hidden crypto split."
 authors = [{ name = "ricefan-tech", email = "r.wang97@yahoo.de" }]
-keywords = ["finance", "feature-engineering", "harbor"]
+keywords = ["machine-learning-research", "quantitative-research", "quantitative-trading", "feature-engineering", "harbor"]
 
 [metadata]
-category = "finance"
+category = "machine-learning-research"
 difficulty = "medium"
-difficulty_explanation = "The agent researches fixed public rows, trains source-bound sklearn models, backtests candidates asynchronously, and submits one strategy."
+difficulty_explanation = "The agent performs quantitative ML and quantitative-trading research on fixed public rows, trains source-bound sklearn models, backtests candidates asynchronously, and submits one strategy."
 suite = "feature-engineering"
 family = "feature-engineering"
 
