@@ -4,7 +4,7 @@ artifacts = [{ source = "/app/submission", service = "mcp-server" }]
 [task]
 name = "mmcollab-dotcom/feature-engineering"
 description = "Engineer causal features and submit one calibrated quantitative-ML trading strategy on a fixed public/hidden crypto split."
-authors = [{ name = "ricefan-tech", email = "r.wang97@yahoo.de" }]
+authors = [{ name = "EdotEnv", email = "michael.zhang@edotenv.com" }]
 keywords = ["machine-learning-research", "quantitative-research", "quantitative-trading", "feature-engineering", "harbor"]
 
 [metadata]

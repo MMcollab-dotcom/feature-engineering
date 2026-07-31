@@ -42,7 +42,7 @@ construction steps are documented in this repository.
 
 ## License in this repository
 
-`environment/LICENSE` grants recipients permission from `ricefan-tech` to use,
+`environment/LICENSE` grants recipients permission from `EdotEnv` to use,
 copy, run, and modify the task code and bundled data solely for internal
 evaluation, research, and demonstration. It prohibits redistribution, public
 hosting, commercial deployment, and real-money trading without separate written
