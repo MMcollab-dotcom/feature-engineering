@@ -26,6 +26,7 @@ used for the hidden score.
 From the repository root:
 
 ```sh
+git lfs pull
 uvx harbor==0.20.0 run -p . -a codex -m openai/gpt-5.6-luna \
   --agent-kwarg reasoning_effort=medium \
   -e docker -n 1
