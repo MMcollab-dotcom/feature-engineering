@@ -31,3 +31,33 @@ uvx harbor==0.20.0 run -p . -a codex -m openai/gpt-5.6-luna \
   --agent-kwarg reasoning_effort=medium \
   -e docker -n 1
 ```
+
+## Scoring
+
+The verifier refits the submitted model on all public 2022–2023 rows, predicts
+the hidden 2024 rows, and runs the after-cost portfolio backtest. Hidden
+annualized Sharpe is the primary score.
+
+`reward.json` contains `primary_score`, `reward`, `sharpe`, `cagr`,
+`max_drawdown`, and `pearson_ic`. `metrics.json` contains the full backtest
+metrics, causal audit, and refit diagnostics.
+
+## Layout
+
+```text
+.
+├── instruction.md
+├── task.toml
+├── environment/
+│   ├── Dockerfile
+│   ├── agent/
+│   └── mcp-server/
+│       ├── Dockerfile
+│       ├── feature_engineering/
+│       ├── runtime_public.parquet
+│       └── task_config.yaml
+├── solution/
+└── tests/
+```
+
+Data provenance is documented in `DATA_PROVENANCE.md`.
