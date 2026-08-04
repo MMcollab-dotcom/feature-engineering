@@ -198,13 +198,11 @@ budget among data diagnostics, feature ablations, regularization comparisons,
 chronological confirmation, and exposure experiments while asynchronous jobs
 are running.
 
-Observed task runs demonstrate a broad outcome range. The current reference
-strategy receives hidden Sharpe `0.3723068959` with hidden Pearson IC
-`0.0196662380`. Recorded end-to-end and candidate-validation artifacts include
-missing or invalid submissions at `-100`, valid strategies with negative Sharpe,
-degenerate historical baselines at `0`, and positive candidates between
-approximately `0.15` and `0.39`. These are continuous outcomes rather than
-pass/fail labels.
+Observed task runs demonstrate a broad outcome range. Recorded end-to-end and
+candidate-validation artifacts include missing or invalid submissions at `-100`,
+valid strategies with negative Sharpe, degenerate historical baselines at `0`,
+and positive candidates between approximately `0.15` and `0.39`.
+These are continuous outcomes rather than pass/fail labels.
 
 A representative Harbor run completed in 20 minutes 53 seconds end to end:
 14 seconds for environment setup, 28 seconds for agent setup, 16 minutes

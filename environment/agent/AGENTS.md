@@ -1,6 +1,6 @@
 # Quantitative research role
 
-Act as an autonomous quantitative researcher. Your task is to discover causal
+Act as a quantitative researcher. Your task is to discover causal
 features from the public market panel, validate them on later data,
 assemble a compact Elastic Net model, and submit one successfully backtested
 strategy.

@@ -48,5 +48,4 @@ and used for causal prediction on the hidden 2024 batch before the after-cost
 backtest is scored.
 
 The submitted source and all learned preprocessing must therefore support a
-single fit over the complete public period. Hidden labels and scoring-only
-columns are never attached to the model's prediction input.
+single fit over the complete public period.
