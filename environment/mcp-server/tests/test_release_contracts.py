@@ -88,6 +88,66 @@ class McpStartupContractTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(events, ["initialized", "ready"])
 
 
+class McpRequestContractTests(unittest.IsolatedAsyncioTestCase):
+    class _Runtime:
+        def record_protocol_error(self, error):
+            return {
+                "type": "error",
+                **error.to_payload(
+                    research_budget={
+                        "remaining_research_attempts": 100,
+                        "response_errors_remaining": 9,
+                    }
+                ),
+            }
+
+        def start_training(self, _request):
+            raise AssertionError("invalid filter must not start training")
+
+        def start_backtest(self, _request):
+            raise AssertionError("invalid filter must not start a backtest")
+
+    async def test_train_filter_rejects_unknown_fields_structurally(self) -> None:
+        with patch.object(mcp_server, "_runtime", self._Runtime()):
+            result = await mcp_server.train_model(
+                "def train_model(X, y): return None",
+                train_filter={"datetime__lt": "2023-07-01T00:00:00Z"},
+            )
+
+        self.assertEqual(result["type"], "error")
+        self.assertEqual(result["error_code"], "invalid_datetime_filter_fields")
+        self.assertTrue(result["recoverable"])
+        self.assertEqual(result["details"]["unknown_fields"], ["datetime__lt"])
+        self.assertEqual(
+            result["details"]["allowed_fields"],
+            ["end_datetime", "start_datetime"],
+        )
+        self.assertIn("end_datetime", result["suggested_correction"])
+
+    async def test_backtest_filter_rejects_unknown_fields_structurally(self) -> None:
+        with patch.object(mcp_server, "_runtime", self._Runtime()):
+            result = await mcp_server.backtest(
+                "model_001",
+                1.0,
+                backtest_filter={"datetime__gte": "2023-07-01T00:00:00Z"},
+            )
+
+        self.assertEqual(result["type"], "error")
+        self.assertEqual(result["error_code"], "invalid_datetime_filter_fields")
+        self.assertEqual(result["details"]["unknown_fields"], ["datetime__gte"])
+        self.assertIn("start_datetime", result["suggested_correction"])
+
+    def test_datetime_filter_rejects_invalid_values_structurally(self) -> None:
+        result = mcp_server._datetime_filter(
+            {"end_datetime": "not-a-datetime"},
+            argument_name="train_filter",
+        )
+
+        self.assertEqual(result.error_code, "invalid_datetime_filter_value")
+        self.assertEqual(result.details["field"], "end_datetime")
+        self.assertTrue(result.recoverable)
+
+
 class EstimatorFamilyContractTests(unittest.TestCase):
     def setUp(self) -> None:
         self.X = pd.DataFrame(

@@ -216,7 +216,8 @@ assert not Path('/root/.cache/uv').exists()
 import stat
 path = Path('/app/data/public_train.parquet')
 assert path.is_file()
-assert stat.S_IMODE(path.stat().st_mode) == 0o444
+assert stat.S_IMODE(path.stat().st_mode) == 0o644
+assert path.open('rb').read(1)
 assert not Path('/app/tests/hidden_data').exists()
 """,
     )
@@ -226,10 +227,9 @@ assert not Path('/app/tests/hidden_data').exists()
         + """
 import stat
 path = Path('/app/data/runtime_public.parquet')
-metadata = path.stat()
 assert path.is_file()
-assert (metadata.st_uid, metadata.st_gid) == (10001, 10001)
-assert stat.S_IMODE(metadata.st_mode) == 0o600
+assert stat.S_IMODE(path.stat().st_mode) == 0o644
+assert path.open('rb').read(1)
 assert not Path('/app/tests/hidden_data').exists()
 assert not Path('/tests/test.sh').exists()
 """,
@@ -253,9 +253,10 @@ assert not Path('/tests/test.sh').exists()
         no_uv
         + """
 import stat
-public = Path('/app/data/runtime_public.parquet').stat()
-assert (public.st_uid, public.st_gid) == (10001, 10001)
-assert stat.S_IMODE(public.st_mode) == 0o600
+public = Path('/app/data/runtime_public.parquet')
+assert public.is_file()
+assert stat.S_IMODE(public.stat().st_mode) == 0o644
+assert public.open('rb').read(1)
 assert Path('/app/tests/hidden_data/hidden.parquet').is_file()
 assert Path('/app/tests/hidden_data/hidden.parquet').stat().st_size > 1024
 assert Path('/tests/test.sh').is_file()
@@ -263,6 +264,16 @@ for directory in ('/app/runtime', '/app/submission', '/logs/verifier'):
     metadata = Path(directory).stat()
     assert (metadata.st_uid, metadata.st_gid) == (10001, 10001)
 """,
+    )
+    assert_python_image_contract(
+        verifier,
+        """
+from pathlib import Path
+public = Path('/app/data/runtime_public.parquet')
+assert public.is_file()
+assert public.open('rb').read(1)
+""",
+        user="10001:10001",
     )
 
 

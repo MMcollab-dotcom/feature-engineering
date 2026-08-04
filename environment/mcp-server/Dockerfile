@@ -35,8 +35,7 @@ CMD ["feature-engineering-worker-server"]
 FROM runtime AS tools
 
 COPY environment/mcp-server/task_config.yaml environment/mcp-server/data_manifest.json /app/
-RUN install -d -o 10001 -g 10001 -m 0700 /app/data
-COPY --chown=10001:10001 --chmod=0600 environment/mcp-server/runtime_public.parquet \
+COPY environment/mcp-server/runtime_public.parquet \
     /app/data/runtime_public.parquet
 
 RUN mkdir -p /app/runtime /app/submission /logs/verifier \

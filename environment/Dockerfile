@@ -24,12 +24,11 @@ RUN python -c "from pathlib import Path; import pandas as pd, yaml; data=yaml.sa
 
 FROM runtime
 
-COPY --chmod=0444 environment/agent/AGENTS.md /app/AGENTS.md
+COPY environment/agent/AGENTS.md /app/AGENTS.md
 COPY environment/agent/context /app/context
-COPY --chmod=0444 --from=public-data \
+COPY --from=public-data \
     /tmp/public_train.parquet /app/data/public_train.parquet
 
-RUN mkdir -p /app/research /logs/agent \
- && chmod 444 /app/context/*.md
+RUN mkdir -p /app/research /logs/agent
 
 CMD ["sleep", "infinity"]

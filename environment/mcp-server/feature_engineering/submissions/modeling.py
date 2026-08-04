@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 from dataclasses import dataclass
 from datetime import datetime
@@ -69,6 +70,25 @@ class TrainingResult:
     error: ModelError | None = None
 
 
+def _prepare_training_payloads(
+    *,
+    config: TaskConfig,
+    public_data: SupervisedData,
+    start: datetime | None,
+    end: datetime | None,
+    staging_directory: Path,
+) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, Any], dict[str, Any]]:
+    X, y = build_training_frames(
+        config=config,
+        public_data=public_data,
+        start=start,
+        end=end,
+    )
+    X_payload = write_dataframe(staging_directory / "training-X.arrow", X)
+    y_payload = write_dataframe(staging_directory / "training-y.arrow", y)
+    return X, y, X_payload, y_payload
+
+
 async def evaluate_model_code_async(
     *,
     config: TaskConfig,
@@ -101,24 +121,6 @@ async def evaluate_model_code_async(
         )
 
     model_code_sha256 = hashlib.sha256(model_code.encode("utf-8")).hexdigest()
-    try:
-        X, y = build_training_frames(
-            config=config,
-            public_data=public_data,
-            start=start,
-            end=end,
-        )
-    except (TypeError, ValueError) as exc:
-        return _failed(
-            feature_names=feature_names,
-            target_names=target_names,
-            error=ModelError(
-                "training_data_invalid",
-                "dataframe_construction",
-                f"{type(exc).__name__}: {exc}",
-            ),
-        )
-
     allowed_imports = tuple(config.prediction.allowed_model_packages)
     replaced_artifact_bytes = (
         registry.get(replace_model_id).artifact_bytes
@@ -127,11 +129,25 @@ async def evaluate_model_code_async(
     )
     with registry.staging_directory() as staging_directory:
         artifact_path = staging_directory / "model.joblib"
-        X_payload = write_dataframe(staging_directory / "training-X.arrow", X)
-        y_payload = write_dataframe(
-            staging_directory / "training-y.arrow",
-            y,
-        )
+        try:
+            X, y, X_payload, y_payload = await asyncio.to_thread(
+                _prepare_training_payloads,
+                config=config,
+                public_data=public_data,
+                start=start,
+                end=end,
+                staging_directory=staging_directory,
+            )
+        except (TypeError, ValueError) as exc:
+            return _failed(
+                feature_names=feature_names,
+                target_names=target_names,
+                error=ModelError(
+                    "training_data_invalid",
+                    "dataframe_construction",
+                    f"{type(exc).__name__}: {exc}",
+                ),
+            )
         fitted = await fit_submitted_model(
             code=model_code,
             expected_source_hash=model_code_sha256,

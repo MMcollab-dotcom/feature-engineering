@@ -14,6 +14,7 @@ from fastmcp.server.lifespan import lifespan
 from feature_engineering.runtime.protocol import (
     BacktestRequest,
     DatetimeFilter,
+    ProtocolError,
     SubmitStrategyRequest,
     TrainModelRequest,
 )
@@ -30,15 +31,46 @@ _runtime: FeatureEngineeringRuntime | None = None
 _background_tasks: set[asyncio.Task[None]] = set()
 
 
-def _datetime_filter(value: dict[str, str] | None) -> DatetimeFilter | None:
+_DATETIME_FILTER_FIELDS = frozenset({"start_datetime", "end_datetime"})
+
+
+def _datetime_filter(
+    value: dict[str, str] | None,
+    *,
+    argument_name: str,
+) -> DatetimeFilter | ProtocolError | None:
     if value is None:
         return None
+    unknown_fields = sorted(set(value) - _DATETIME_FILTER_FIELDS)
+    if unknown_fields:
+        return ProtocolError(
+            error_code="invalid_datetime_filter_fields",
+            message=f"{argument_name} contains unsupported fields: {unknown_fields}.",
+            details={
+                "unknown_fields": unknown_fields,
+                "allowed_fields": sorted(_DATETIME_FILTER_FIELDS),
+            },
+            suggested_correction=(
+                f"Use only start_datetime and end_datetime in {argument_name}."
+            ),
+        )
+
     from datetime import datetime
 
     parsed: dict[str, datetime | None] = {}
-    for key in ("start_datetime", "end_datetime"):
+    for key in _DATETIME_FILTER_FIELDS:
         raw = value.get(key)
-        parsed[key] = datetime.fromisoformat(raw) if raw else None
+        try:
+            parsed[key] = datetime.fromisoformat(raw) if raw else None
+        except (TypeError, ValueError):
+            return ProtocolError(
+                error_code="invalid_datetime_filter_value",
+                message=f"{argument_name}.{key} must be an ISO-8601 datetime.",
+                details={"field": key, "value": raw},
+                suggested_correction=(
+                    "Use an ISO-8601 datetime such as 2023-07-01T00:00:00Z."
+                ),
+            )
     return DatetimeFilter(**parsed)
 
 
@@ -96,11 +128,14 @@ async def train_model(
     """Start one asynchronous model fit and immediately return a training ID."""
 
     runtime = _required_runtime()
+    parsed_filter = _datetime_filter(train_filter, argument_name="train_filter")
+    if isinstance(parsed_filter, ProtocolError):
+        return runtime.record_protocol_error(parsed_filter)
     result = runtime.start_training(
         TrainModelRequest(
             model_code=model_code,
             label=label,
-            train_filter=_datetime_filter(train_filter),
+            train_filter=parsed_filter,
         )
     )
     if result.get("ok") is True:
@@ -130,12 +165,15 @@ async def backtest(
     """Start one asynchronous public backtest and return a backtest ID."""
 
     runtime = _required_runtime()
+    parsed_filter = _datetime_filter(backtest_filter, argument_name="backtest_filter")
+    if isinstance(parsed_filter, ProtocolError):
+        return runtime.record_protocol_error(parsed_filter)
     result = runtime.start_backtest(
         BacktestRequest(
             model_id=model_id,
             max_gross_exposure=max_gross_exposure,
             label=label,
-            backtest_filter=_datetime_filter(backtest_filter),
+            backtest_filter=parsed_filter,
         )
     )
     if result.get("ok") is True:

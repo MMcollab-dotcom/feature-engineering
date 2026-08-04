@@ -40,6 +40,24 @@ class BacktestResult:
     error: StrategyError | None = None
 
 
+def _prepare_backtest_payload(
+    *,
+    config: TaskConfig,
+    public_data: SupervisedData,
+    lower: pd.Timestamp,
+    origin_end: pd.Timestamp,
+    operation_directory: Any,
+) -> tuple[Any, dict[str, Any]]:
+    X = _build_backtest_prediction_frame(
+        config,
+        public_data,
+        lower,
+        origin_end,
+    )
+    X_payload = write_dataframe(operation_directory / "batch-X.arrow", X)
+    return X, X_payload
+
+
 async def run_backtest(
     *,
     config: TaskConfig,
@@ -55,16 +73,14 @@ async def run_backtest(
     upper = public_data.end_datetime if end is None else pd.Timestamp(end)
     origin_end = forecast_origin_end_datetime(upper, config.data.granularity)
     model = registry.get(strategy.model_id)
-    X = _build_backtest_prediction_frame(
-        config,
-        public_data,
-        lower,
-        origin_end,
-    )
     with registry.operation_directory(strategy.model_id) as operation_directory:
-        X_payload = write_dataframe(
-            operation_directory / "batch-X.arrow",
-            X,
+        X, X_payload = await asyncio.to_thread(
+            _prepare_backtest_payload,
+            config=config,
+            public_data=public_data,
+            lower=lower,
+            origin_end=origin_end,
+            operation_directory=operation_directory,
         )
         predicted = await predict_artifact(
             code=model.model_code,
