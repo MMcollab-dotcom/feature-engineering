@@ -61,11 +61,4 @@ costs:
   linear_fee_bps: 1.0
 
 reward:
-  model: annualized_sharpe
   periods_per_year: 525600
-  primary_metric: sharpe
-  reported_metrics:
-    - sharpe
-    - cagr
-    - max_drawdown
-    - pearson_ic

@@ -16,7 +16,7 @@ import pyarrow as pa
 import pyarrow.ipc as ipc
 
 from feature_engineering.config import TaskConfig
-from feature_engineering.core.fixed_data import SupervisedData
+from feature_engineering.core.data import SupervisedData
 from feature_engineering.core.granularity import forecast_origin_end_datetime
 
 MAX_DATAFRAME_ARROW_BYTES = 2 * 1024 * 1024 * 1024

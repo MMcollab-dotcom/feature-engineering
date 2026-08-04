@@ -84,10 +84,7 @@ class CostsConfig(FrozenConfig):
 
 
 class RewardConfig(FrozenConfig):
-    model: Literal["annualized_sharpe"]
     periods_per_year: int = Field(gt=0)
-    primary_metric: Literal["sharpe"]
-    reported_metrics: tuple[str, ...]
 
 
 class TaskConfig(FrozenConfig):

@@ -1,4 +1,4 @@
-"""Load the verifier-only hidden split from the fixed task bundle."""
+"""Load verifier-only hidden task data."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from pathlib import Path
 import pandas as pd
 
 from feature_engineering.config import TaskConfig
-from feature_engineering.core.fixed_data import SupervisedData
+from feature_engineering.core.data import SupervisedData
 from feature_engineering.submissions.causal_audit import (
     validate_fixed_prediction_window,
 )
@@ -18,9 +18,7 @@ def load_hidden_supervised_data(
     *,
     public_config: TaskConfig,
     public_data: SupervisedData,
-    scoring_config,
 ) -> SupervisedData:
-    del scoring_config
     manifest_path = Path(public_config.data.manifest_path)
     payload = json.loads(manifest_path.read_text(encoding="utf-8"))
     hidden_path = (manifest_path.parent / payload["hidden_path"]).resolve()
@@ -49,7 +47,6 @@ def load_hidden_supervised_data(
         symbols=public_data.symbols,
         start_datetime=pd.Timestamp(payload["hidden_first_forecast_origin_datetime"]),
         end_datetime=pd.Timestamp(payload["hidden_last_realization_datetime"]),
-        manifest_sha256=public_data.manifest_sha256,
     )
     validate_fixed_prediction_window(
         config=public_config,

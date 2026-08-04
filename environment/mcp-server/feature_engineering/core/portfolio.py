@@ -10,8 +10,8 @@ import pandas as pd
 
 from feature_engineering.config import TaskConfig
 from feature_engineering.core.costs import linear_fee_rate
+from feature_engineering.core.data import SupervisedData
 from feature_engineering.core.ema_smoothed_engine import EmaSmoothedPortfolioEngine
-from feature_engineering.core.fixed_data import SupervisedData
 from feature_engineering.core.granularity import (
     forecast_origin_end_datetime,
     granularity_delta,
@@ -49,17 +49,6 @@ def calculate_forecast_beta(
     if not np.isfinite(beta):
         raise ValueError("Training forecast beta is not finite.")
     return beta
-
-
-def calculate_forecast_scale(
-    forecasts: np.ndarray,
-    training_targets: np.ndarray,
-) -> float:
-    """Return the shrunk non-negative training forecast beta."""
-
-    return forecast_scale_from_beta(
-        calculate_forecast_beta(forecasts, training_targets)
-    )
 
 
 def forecast_scale_from_beta(forecast_beta: float) -> float:
@@ -637,7 +626,6 @@ __all__ = [
     "BacktestSimulation",
     "backtest_metrics",
     "calculate_forecast_beta",
-    "calculate_forecast_scale",
     "calculate_median_signal_size",
     "execute_backtest",
     "forecast_scale_from_beta",

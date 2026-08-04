@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from fastmcp import FastMCP
+from fastmcp.server.lifespan import lifespan
 
 from feature_engineering.runtime.protocol import (
     BacktestRequest,
@@ -24,10 +25,8 @@ TASK_CONFIG_PATH = Path(os.environ.get("FEATURE_TASK_CONFIG", "/app/task_config.
 RUNTIME_ROOT = Path(os.environ.get("FEATURE_RUNTIME_ROOT", "/app/runtime"))
 SUBMISSION_ROOT = Path(os.environ.get("FEATURE_SUBMISSION_ROOT", "/app/submission"))
 
-mcp = FastMCP("feature-engineering")
 
 _runtime: FeatureEngineeringRuntime | None = None
-_runtime_lock: asyncio.Lock | None = None
 _background_tasks: set[asyncio.Task[None]] = set()
 
 
@@ -43,26 +42,33 @@ def _datetime_filter(value: dict[str, str] | None) -> DatetimeFilter | None:
     return DatetimeFilter(**parsed)
 
 
-async def _get_runtime() -> FeatureEngineeringRuntime:
-    global _runtime, _runtime_lock
-    if _runtime is not None:
-        return _runtime
-    if _runtime_lock is None:
-        _runtime_lock = asyncio.Lock()
-    async with _runtime_lock:
-        if _runtime is None:
-            RUNTIME_ROOT.mkdir(parents=True, exist_ok=True)
-            SUBMISSION_ROOT.mkdir(parents=True, exist_ok=True)
-            _runtime = await asyncio.to_thread(
-                FeatureEngineeringRuntime.from_config_path,
-                TASK_CONFIG_PATH,
-                registry=TrainedModelRegistry(RUNTIME_ROOT),
-                official_scoring_enabled=False,
-                task_outputs=SUBMISSION_ROOT,
-                task_name="feature-engineering",
-                data_split="public",
-            )
+async def _initialize_runtime() -> None:
+    global _runtime
+    RUNTIME_ROOT.mkdir(parents=True, exist_ok=True)
+    SUBMISSION_ROOT.mkdir(parents=True, exist_ok=True)
+    _runtime = await asyncio.to_thread(
+        FeatureEngineeringRuntime.from_config_path,
+        TASK_CONFIG_PATH,
+        registry=TrainedModelRegistry(RUNTIME_ROOT),
+        official_scoring_enabled=False,
+        task_outputs=SUBMISSION_ROOT,
+        task_name="feature-engineering",
+        data_split="public",
+    )
+
+
+def _required_runtime() -> FeatureEngineeringRuntime:
+    if _runtime is None:
+        raise RuntimeError("Feature-engineering runtime is not initialized.")
     return _runtime
+
+@lifespan
+async def _server_lifespan(_server: FastMCP):
+    await _initialize_runtime()
+    yield {}
+
+
+mcp = FastMCP("feature-engineering", lifespan=_server_lifespan)
 
 
 def _start_background(coro: Any, *, name: str) -> None:
@@ -89,7 +95,7 @@ async def train_model(
 ) -> dict[str, Any]:
     """Start one asynchronous model fit and immediately return a training ID."""
 
-    runtime = await _get_runtime()
+    runtime = _required_runtime()
     result = runtime.start_training(
         TrainModelRequest(
             model_code=model_code,
@@ -110,7 +116,7 @@ async def train_model(
 async def get_train_model_result(training_id: str) -> dict[str, Any]:
     """Return running status or the immutable terminal training result."""
 
-    result = (await _get_runtime()).get_train_model_result(training_id)
+    result = _required_runtime().get_train_model_result(training_id)
     return {**result, "done": result.get("status") != "running"}
 
 
@@ -123,7 +129,7 @@ async def backtest(
 ) -> dict[str, Any]:
     """Start one asynchronous public backtest and return a backtest ID."""
 
-    runtime = await _get_runtime()
+    runtime = _required_runtime()
     result = runtime.start_backtest(
         BacktestRequest(
             model_id=model_id,
@@ -145,7 +151,7 @@ async def backtest(
 async def get_backtest_result(backtest_id: str) -> dict[str, Any]:
     """Return running status or the immutable terminal backtest result."""
 
-    result = (await _get_runtime()).get_backtest_result(backtest_id)
+    result = _required_runtime().get_backtest_result(backtest_id)
     return {**result, "done": result.get("status") != "running"}
 
 
@@ -156,7 +162,7 @@ async def submit_strategy(
 ) -> dict[str, Any]:
     """Validate and persist the one final accepted strategy submission."""
 
-    return await (await _get_runtime()).submit_strategy(
+    return await _required_runtime().submit_strategy(
         SubmitStrategyRequest(strategy_id=strategy_id, rationale=rationale)
     )
 

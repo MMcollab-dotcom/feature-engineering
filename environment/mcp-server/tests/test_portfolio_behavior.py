@@ -77,7 +77,6 @@ class PortfolioBehaviorTests(unittest.TestCase):
             symbols=public_data.symbols,
             start_datetime=public_data.start_datetime,
             end_datetime=public_data.end_datetime,
-            manifest_sha256=public_data.manifest_sha256,
         )
 
     def _predictions(self, origins: list[pd.Timestamp]) -> pd.DataFrame:

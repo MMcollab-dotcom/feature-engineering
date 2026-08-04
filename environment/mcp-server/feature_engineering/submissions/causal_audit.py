@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 
 from feature_engineering.config import TaskConfig
-from feature_engineering.core.fixed_data import SupervisedData
+from feature_engineering.core.data import SupervisedData
 from feature_engineering.core.granularity import forecast_origin_end_datetime
 from feature_engineering.submissions.dataframes import build_prediction_frame
 

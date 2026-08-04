@@ -13,7 +13,7 @@ from feature_engineering.config import (
     MetricRoundingConfig,
     TaskConfig,
 )
-from feature_engineering.core.fixed_data import SupervisedData
+from feature_engineering.core.data import SupervisedData
 from feature_engineering.core.granularity import forecast_origin_end_datetime
 from feature_engineering.core.portfolio import execute_backtest
 from feature_engineering.submissions.causal_audit import audit_summary

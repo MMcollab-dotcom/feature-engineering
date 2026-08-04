@@ -18,6 +18,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
 from evalenv_shared.worker.socket_server import _socket_is_live, serve
+from feature_engineering import mcp_server
 from feature_engineering.config import load_task_config
 from feature_engineering.core.backtest import _model_visible_metrics
 from feature_engineering.core.ema_smoothed_engine import EmaSmoothedPortfolioEngine
@@ -56,6 +57,35 @@ class ConfigurationContractTests(unittest.TestCase):
         config = load_task_config(CONFIG_PATH)
         visible = _model_visible_metrics(config, {"mse": 2.75e-6})
         self.assertEqual(visible["mse"], 2.75e-6)
+
+
+class McpStartupContractTests(unittest.IsolatedAsyncioTestCase):
+    async def test_lifespan_owns_runtime_initialization(self) -> None:
+        self.assertFalse(hasattr(mcp_server, "_runtime_lock"))
+        original_runtime = mcp_server._runtime
+        mcp_server._runtime = None
+        self.addCleanup(setattr, mcp_server, "_runtime", original_runtime)
+        with self.assertRaisesRegex(RuntimeError, "not initialized"):
+            mcp_server._required_runtime()
+
+        runtime = object()
+        events: list[str] = []
+
+        async def initialize_runtime() -> None:
+            events.append("initialized")
+            mcp_server._runtime = runtime
+
+        self.assertIs(mcp_server.mcp._lifespan, mcp_server._server_lifespan)
+        with patch.object(
+            mcp_server,
+            "_initialize_runtime",
+            new=initialize_runtime,
+        ):
+            async with mcp_server.mcp._lifespan(mcp_server.mcp):
+                self.assertIs(mcp_server._required_runtime(), runtime)
+                events.append("ready")
+
+        self.assertEqual(events, ["initialized", "ready"])
 
 
 class EstimatorFamilyContractTests(unittest.TestCase):

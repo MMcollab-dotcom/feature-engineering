@@ -1,8 +1,7 @@
-"""Load the prepackaged public split for this fixed Harbor task."""
+"""Load the packaged public task data."""
 
 from __future__ import annotations
 
-import hashlib
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -21,11 +20,9 @@ class SupervisedData:
     symbols: tuple[str, ...]
     start_datetime: pd.Timestamp
     end_datetime: pd.Timestamp
-    manifest_sha256: str
 
 
-def load_supervised_data(config: TaskConfig, *, s3_client=None) -> SupervisedData:
-    del s3_client
+def load_supervised_data(config: TaskConfig) -> SupervisedData:
     manifest_path = Path(config.data.manifest_path)
     manifest = _read_manifest(manifest_path)
     public_path = (manifest_path.parent / manifest["public_path"]).resolve()
@@ -35,7 +32,6 @@ def load_supervised_data(config: TaskConfig, *, s3_client=None) -> SupervisedDat
         frame,
         start_datetime=pd.Timestamp(manifest["public_first_forecast_origin_datetime"]),
         end_datetime=pd.Timestamp(manifest["public_last_realization_datetime"]),
-        manifest_sha256=hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
     )
 
 
@@ -45,7 +41,6 @@ def normalize_supervised_frame(
     *,
     start_datetime: pd.Timestamp,
     end_datetime: pd.Timestamp,
-    manifest_sha256: str,
 ) -> SupervisedData:
     data = config.data
     required = {
@@ -88,7 +83,6 @@ def normalize_supervised_frame(
         symbols=symbols,
         start_datetime=start_datetime,
         end_datetime=end_datetime,
-        manifest_sha256=manifest_sha256,
     )
 
 
@@ -97,7 +91,7 @@ def _read_manifest(path: Path) -> dict[str, str]:
 
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
-        raise ValueError("Fixed data manifest must be a JSON object.")
+        raise ValueError("Data manifest must be a JSON object.")
     return payload
 
 

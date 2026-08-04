@@ -12,7 +12,7 @@ from typing import Any
 from evalenv_shared.worker.process import SubprocessWorkerHost
 from feature_engineering.config import TaskConfig, load_task_config
 from feature_engineering.core.backtest import run_backtest
-from feature_engineering.core.fixed_data import (
+from feature_engineering.core.data import (
     SupervisedData,
     load_supervised_data,
 )
@@ -154,7 +154,6 @@ class TrainingOperation:
     filter: dict[str, str]
     result: dict[str, Any] | None = None
     failure: tuple[str, str] | None = None
-    publication_failure: tuple[str, str] | None = None
 
     def summary(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
@@ -162,7 +161,7 @@ class TrainingOperation:
             "attempt_id": self.attempt_id,
             "status": "running",
         }
-        failure = self.failure or self.publication_failure
+        failure = self.failure
         if failure is not None:
             payload["status"] = "infrastructure_failed"
             payload["error_code"] = failure[0]
@@ -186,7 +185,6 @@ class BacktestOperation:
     strategy: CompiledStrategy | StrategyError
     result: dict[str, Any] | None = None
     failure: tuple[str, str] | None = None
-    publication_failure: tuple[str, str] | None = None
 
     def summary(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
@@ -194,7 +192,7 @@ class BacktestOperation:
             "attempt_id": self.attempt_id,
             "status": "running",
         }
-        failure = self.failure or self.publication_failure
+        failure = self.failure
         if failure is not None:
             payload["status"] = "infrastructure_failed"
             payload["error_code"] = failure[0]
@@ -220,10 +218,6 @@ class FeatureEngineeringRuntime:
     attempts: list[StrategyAttempt] = field(default_factory=list)
     model_attempts: list[ModelAttempt] = field(default_factory=list)
     strategies: dict[str, CompiledStrategy] = field(default_factory=dict)
-    official_primary_score: float | None = None
-    official_metrics: dict[str, float] = field(default_factory=dict)
-    official_scoring_status: dict[str, Any] = field(default_factory=dict)
-    last_payload: dict[str, Any] = field(default_factory=dict)
     done: bool = False
     response_errors: int = 0
     research_attempts_consumed: int = 0
@@ -442,8 +436,7 @@ class FeatureEngineeringRuntime:
                 "Training failed because of an environment infrastructure error.",
             )
         finally:
-            # Commit and slot release are one local transition; state-channel
-            # publication happens later and cannot change this outcome.
+            # Commit and slot release are one local transition.
             if operation.result is not None or operation.failure is not None:
                 if self.active_training_id != training_id:
                     raise RuntimeError(
@@ -458,10 +451,6 @@ class FeatureEngineeringRuntime:
             return self._unknown_operation_error("training", training_id)
         if operation.failure is not None:
             raise OperationInfrastructureError(training_id, *operation.failure)
-        if operation.publication_failure is not None:
-            raise OperationInfrastructureError(
-                training_id, *operation.publication_failure
-            )
         if operation.result is None:
             return {
                 "type": "training_status",
@@ -634,8 +623,7 @@ class FeatureEngineeringRuntime:
                 "Backtest failed because of an environment infrastructure error.",
             )
         finally:
-            # Commit and slot release are one local transition; state-channel
-            # publication happens later and cannot change this outcome.
+            # Commit and slot release are one local transition.
             if operation.result is not None or operation.failure is not None:
                 if self.active_backtest_id != backtest_id:
                     raise RuntimeError(
@@ -650,10 +638,6 @@ class FeatureEngineeringRuntime:
             return self._unknown_operation_error("backtest", backtest_id)
         if operation.failure is not None:
             raise OperationInfrastructureError(backtest_id, *operation.failure)
-        if operation.publication_failure is not None:
-            raise OperationInfrastructureError(
-                backtest_id, *operation.publication_failure
-            )
         if operation.result is None:
             return {
                 "type": "backtest_status",
@@ -663,23 +647,6 @@ class FeatureEngineeringRuntime:
             }
         return {**deepcopy(operation.result), "research_budget": self._budget_payload()}
 
-    def record_publication_failure(self, kind: str, operation_id: str) -> None:
-        operations = (
-            self.training_operations if kind == "training" else self.backtest_operations
-        )
-        operation = operations[operation_id]
-        failure = (
-            f"{kind}_state_publication_failed",
-            f"{kind.title()} state publication failed.",
-        )
-        operation.publication_failure = failure
-        if operation.result is None and operation.failure is None:
-            operation.failure = failure
-            active_field = f"active_{kind}_id"
-            if getattr(self, active_field) != operation_id:
-                raise RuntimeError(f"{kind.title()} does not own the active slot.")
-            setattr(self, active_field, None)
-            self._finish_pending_termination_if_idle()
 
     async def submit_strategy(
         self,
@@ -745,7 +712,6 @@ class FeatureEngineeringRuntime:
                         error_code=exc.error_code,
                         audit=exc.audit,
                         fit_diagnostics=exc.fit_diagnostics,
-                        reason="hidden_execution_failed",
                     )
                 if not official.get("ok", False):
                     return self._reject_official_submission(
@@ -757,27 +723,14 @@ class FeatureEngineeringRuntime:
                         ),
                         audit=official.get("causal_audit"),
                         fit_diagnostics=official.get("fit_diagnostics"),
-                        reason="official_scoring_failed",
                     )
-                self.official_primary_score = float(official["primary_score"])
-                self.official_metrics = dict(official["metrics"])
                 official_fit_diagnostics = dict(official["fit_diagnostics"])
                 submission["causal_audit"] = dict(official.get("causal_audit") or {})
-                self.official_scoring_status = {
-                    "ok": True,
-                    "isolation": "full_public_refit_then_source_aware_hidden_batch",
-                    "scoring_components": list(official["scoring_components"]),
-                }
                 official_scoring = {
                     "status": "succeeded",
                     "isolation": "full_public_refit_then_source_aware_hidden_batch",
                 }
             else:
-                self.official_scoring_status = {
-                    "ok": False,
-                    "skipped": True,
-                    "reason": "official_scoring_disabled",
-                }
                 official_scoring = {
                     "status": "skipped",
                     "reason": "official_scoring_disabled",
@@ -829,7 +782,6 @@ class FeatureEngineeringRuntime:
         error_code: str,
         audit: dict[str, Any] | None,
         fit_diagnostics: dict[str, Any] | None,
-        reason: str,
         official_scoring_extra: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Persist a terminal rejected submission without exposing hidden metrics."""
@@ -845,15 +797,6 @@ class FeatureEngineeringRuntime:
         submission["accepted_for_official_scoring"] = False
         submission["rejection_reason"] = error_code
         submission["causal_audit"] = hidden_audit
-        self.official_primary_score = 0.0
-        self.official_metrics = {}
-        self.official_scoring_status = {
-            "ok": False,
-            "submitted_code_failure": reason == "hidden_execution_failed",
-            "reason": reason,
-        }
-        if official_scoring_extra:
-            self.official_scoring_status.update(official_scoring_extra)
         bundle_path, projection = self._promote_submission(
             request=request,
             strategy=strategy,
@@ -930,46 +873,6 @@ class FeatureEngineeringRuntime:
             official_scoring=official_scoring,
             hidden_audit=hidden_audit,
         )
-
-    def projection(self, payload: dict[str, Any]) -> dict[str, Any]:
-        """Build the fields for one authoritative state publication."""
-
-        done = self.done or (
-            self.termination_pending
-            and self.active_training_id is None
-            and self.active_backtest_id is None
-        )
-        metrics = self.current_metrics()
-        reward = float(
-            self.official_primary_score
-            if self.official_primary_score is not None
-            else metrics.get("reward", 0.0)
-        )
-        return {
-            "done": done,
-            "reward": reward,
-            "metrics": metrics,
-            "trace_data": deepcopy(self.trace),
-            "last_payload": deepcopy(payload),
-            "official_primary_score": self.official_primary_score,
-            "official_metrics": dict(self.official_metrics),
-            "official_scoring_status": dict(self.official_scoring_status),
-            "active_training_id": self.active_training_id,
-            "active_backtest_id": self.active_backtest_id,
-            "training_operations": {
-                key: operation.summary()
-                for key, operation in self.training_operations.items()
-            },
-            "backtest_operations": {
-                key: operation.summary()
-                for key, operation in self.backtest_operations.items()
-            },
-            "research_attempts_consumed": self.research_attempts_consumed,
-            "termination_pending": self.termination_pending,
-        }
-
-    def record_publication(self, payload: dict[str, Any]) -> None:
-        self.last_payload = deepcopy(payload)
 
     def _research_budget_exhausted(self) -> bool:
         return (
@@ -1144,12 +1047,6 @@ def _filter_payload(start: datetime, end: datetime) -> dict[str, str]:
     }
 
 
-def _audit_from_error(error: dict[str, Any]) -> dict[str, Any] | None:
-    details = error.get("details")
-    if not isinstance(details, dict):
-        return None
-    audit = details.get("causal_audit")
-    return dict(audit) if isinstance(audit, dict) else None
 
 
 def _model_visible_error(error: dict[str, Any]) -> dict[str, Any]:

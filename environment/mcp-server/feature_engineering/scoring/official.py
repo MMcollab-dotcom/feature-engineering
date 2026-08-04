@@ -8,8 +8,8 @@ from typing import Any
 
 from feature_engineering.config import TaskConfig
 from feature_engineering.core.backtest import run_backtest
-from feature_engineering.core.fixed_data import SupervisedData
-from feature_engineering.scoring.fixed_hidden_data import load_hidden_supervised_data
+from feature_engineering.core.data import SupervisedData
+from feature_engineering.scoring.hidden_data import load_hidden_supervised_data
 from feature_engineering.submissions.modeling import evaluate_model_code_async
 from feature_engineering.submissions.registry import TrainedModelRegistry
 from feature_engineering.submissions.strategy import CompiledStrategy
@@ -70,7 +70,6 @@ async def score_official_strategy(
     hidden_data = load_hidden_supervised_data(
         public_config=public_config,
         public_data=public_data,
-        scoring_config=None,
     )
     backtest = await run_backtest(
         config=public_config,

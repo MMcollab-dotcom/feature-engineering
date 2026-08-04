@@ -21,10 +21,6 @@ def granularity_delta(granularity: str) -> pd.Timedelta:
         ) from exc
 
 
-def periods_per_day(granularity: str) -> int:
-    return int(pd.Timedelta(days=1) / granularity_delta(granularity))
-
-
 def forecast_origin_end_datetime(
     end_datetime: pd.Timestamp, granularity: str
 ) -> pd.Timestamp:
@@ -36,5 +32,4 @@ def forecast_origin_end_datetime(
 __all__ = [
     "forecast_origin_end_datetime",
     "granularity_delta",
-    "periods_per_day",
 ]

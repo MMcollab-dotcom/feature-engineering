@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import hashlib
 from dataclasses import dataclass
 from datetime import datetime
@@ -14,7 +13,7 @@ import pandas as pd
 
 from evalenv_shared.worker import WorkerProtocolError
 from feature_engineering.config import TaskConfig
-from feature_engineering.core.fixed_data import SupervisedData
+from feature_engineering.core.data import SupervisedData
 from feature_engineering.core.portfolio import (
     calculate_forecast_beta,
     calculate_median_signal_size,
@@ -68,35 +67,6 @@ class TrainingResult:
     feature_names: tuple[str, ...]
     target_names: tuple[str, ...]
     error: ModelError | None = None
-
-
-def evaluate_model_code(
-    *,
-    config: TaskConfig,
-    public_data: SupervisedData,
-    registry: TrainedModelRegistry,
-    model_code: str,
-    training_filter: dict[str, str],
-    start: datetime | None = None,
-    end: datetime | None = None,
-    timeout_seconds: float = 2.0,
-    worker_host: Any = None,
-    replace_model_id: str | None = None,
-) -> TrainingResult:
-    return asyncio.run(
-        evaluate_model_code_async(
-            config=config,
-            public_data=public_data,
-            registry=registry,
-            model_code=model_code,
-            training_filter=training_filter,
-            start=start,
-            end=end,
-            timeout_seconds=timeout_seconds,
-            worker_host=worker_host,
-            replace_model_id=replace_model_id,
-        )
-    )
 
 
 async def evaluate_model_code_async(
@@ -462,6 +432,5 @@ def _sha256_file(path: Path) -> str:
 __all__ = [
     "ModelError",
     "TrainingResult",
-    "evaluate_model_code",
     "evaluate_model_code_async",
 ]

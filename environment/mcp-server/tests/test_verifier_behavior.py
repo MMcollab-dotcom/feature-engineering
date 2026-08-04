@@ -19,7 +19,7 @@ from feature_engineering.evaluation.verifier import (
     _require_bundle_file,
     verify_submission,
 )
-from feature_engineering.scoring.fixed_hidden_data import load_hidden_supervised_data
+from feature_engineering.scoring.hidden_data import load_hidden_supervised_data
 from feature_engineering.submissions.bundle import (
     SCHEMA_VERSION,
     promote_submission_bundle,
@@ -350,7 +350,6 @@ class VerifierBehaviorTests(unittest.IsolatedAsyncioTestCase):
         hidden = load_hidden_supervised_data(
             public_config=self.workspace.config,
             public_data=self.workspace.public_data,
-            scoring_config=None,
         )
         captured: dict[str, object] = {}
 

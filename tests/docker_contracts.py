@@ -108,6 +108,42 @@ def assert_compose_contract() -> None:
         compose_output(VERIFIER_PROJECT, TEST_COMPOSE, "config", "--format", "json")
     )
     services = config["services"]
+    environment_config = json.loads(
+        compose_output(
+            ENVIRONMENT_PROJECT,
+            ENVIRONMENT_COMPOSE,
+            "config",
+            "--format",
+            "json",
+        )
+    )
+    environment_services = environment_config["services"]
+    agent = environment_services["main"]
+    mcp_server = environment_services["mcp-server"]
+    assert_equal(
+        agent["depends_on"]["mcp-server"]["condition"],
+        "service_healthy",
+        "agent MCP dependency condition",
+    )
+    assert_equal(
+        mcp_server["healthcheck"]["test"],
+        [
+            "CMD",
+            "python",
+            "-c",
+            (
+                "import socket; "
+                "s=socket.create_connection(('localhost',8000),timeout=2); "
+                "s.close()"
+            ),
+        ],
+        "MCP readiness probe",
+    )
+    assert_equal(
+        mcp_server["healthcheck"]["start_period"],
+        "30m0s",
+        "MCP initialization allowance",
+    )
     main = services["main"]
     worker = services["model-worker"]
     initializer = services["worker-volume-init"]

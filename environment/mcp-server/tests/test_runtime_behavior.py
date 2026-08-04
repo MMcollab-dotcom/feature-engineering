@@ -365,7 +365,6 @@ class BudgetBoundaryTests(RuntimeBehaviorTestCase):
         self.assertIsNone(runtime.active_training_id)
         terminal = runtime.get_train_model_result(started["training_id"])
         self.assertEqual(terminal["status"], "succeeded")
-        self.assertTrue(runtime.projection(terminal)["done"])
         rejected = runtime.start_training(TrainModelRequest(PAST_ONLY_MODEL_CODE))
         self.assertEqual(rejected["error_code"], "rollout_terminating")
         self.assertEqual(runtime.research_attempts_consumed, 1)

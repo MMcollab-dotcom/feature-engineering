@@ -15,7 +15,7 @@ import sklearn
 import yaml
 
 from feature_engineering.config import TaskConfig, load_task_config
-from feature_engineering.core.fixed_data import SupervisedData, load_supervised_data
+from feature_engineering.core.data import SupervisedData, load_supervised_data
 from feature_engineering.submissions.registry import StoredModel, TrainedModelRegistry
 from feature_engineering.submissions.validation import submitted_module_name
 
@@ -286,15 +286,7 @@ def _config_payload(
         "execution": {"initial_capital": 100000.0, "timeout_seconds": 30.0},
         "costs": {"linear_fee_bps": 1.0},
         "reward": {
-            "model": "annualized_sharpe",
             "periods_per_year": 525600,
-            "primary_metric": "sharpe",
-            "reported_metrics": [
-                "sharpe",
-                "cagr",
-                "max_drawdown",
-                "pearson_ic",
-            ],
         },
     }
 

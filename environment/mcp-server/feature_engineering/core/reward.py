@@ -6,16 +6,6 @@ import numpy as np
 import pandas as pd
 
 
-def annualized_sharpe(step_returns: list[float], *, periods_per_year: int) -> float:
-    returns = np.asarray(step_returns, dtype=float)
-    if len(returns) < 2:
-        return 0.0
-    std = float(returns.std(ddof=1))
-    if std <= 1.0e-12:
-        return 0.0
-    return float(returns.mean() / std * np.sqrt(float(periods_per_year)))
-
-
 def rank_correlation(
     predictions: list[float] | np.ndarray,
     realized: list[float] | np.ndarray,

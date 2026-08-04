@@ -57,7 +57,7 @@ async def verify_submission(
 ) -> dict[str, float]:
     from evalenv_shared.worker.socket_host import UnixSocketWorkerHost
     from feature_engineering.config import load_task_config
-    from feature_engineering.core.fixed_data import load_supervised_data
+    from feature_engineering.core.data import load_supervised_data
     from feature_engineering.scoring.official import score_official_strategy
     from feature_engineering.submissions.bundle import SCHEMA_VERSION
     from feature_engineering.submissions.registry import TrainedModelRegistry
